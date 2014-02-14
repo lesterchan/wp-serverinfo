@@ -3,7 +3,7 @@
 Plugin Name: WP-ServerInfo
 Plugin URI: http://lesterchan.net/portfolio/programming/php/
 Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
-Version: 1.60
+Version: 1.61
 Author: Lester 'GaMerZ' Chan
 Author URI: http://lesterchan.net
 Text Domain: wp-serverinfo
@@ -146,7 +146,7 @@ function get_generalinfo() {
 				</tr>
 				<tr>
 					<td><?php _e('Server Admin', 'wp-serverinfo'); ?></td>
-					<td><?php echo $_SERVER['SERVER_ADMIN']; ?></td>
+					<td><?php echo (isset($_SERVER['SERVER_ADMIN']) ? $_SERVER['SERVER_ADMIN']: ''); ?></td>
 					<td><?php _e('PHP Max Upload Size', 'wp-serverinfo'); ?></td>
 					<td><?php echo format_php_size(get_php_upload_max()); ?></td>
 				</tr>
@@ -179,8 +179,7 @@ function get_phpinfo() {
 	// Strip Tags
 	$phpinfo = strip_tags($phpinfo, '<table><tr><th><td>');
 	// Strip Unwanted Contents
-	$phpinfo = eregi('<table border="0" cellpadding="3" width="600">(.*)</table>', $phpinfo, $data);
-	$phpinfo = $data[0];
+	$phpinfo = substr($phpinfo, strpos($phpinfo, '<table border="0" cellpadding="3" width="600">'));
 	// PHP Version Header
 	$phpinfo = preg_replace("!<table border=\"0\" cellpadding=\"3\" width=\"600\">\n<tr class=\"h\"><td>\n(.*?)\n</td></tr>\n</table>!", "<h2>$1</h2>".serverinfo_subnavi(false), $phpinfo);
 	// Normal Header
@@ -570,6 +569,7 @@ if(!function_exists('get_gd_version')) {
 ### Function: Get The Server Load
 if(!function_exists('get_serverload')) {
 	function get_serverload() {
+		$server_load = '';
 		if(PHP_OS != 'WINNT' && PHP_OS != 'WIN32') {
 			if(@file_exists('/proc/loadavg') ) {
 				if ($fh = @fopen( '/proc/loadavg', 'r' )) {
@@ -585,7 +585,7 @@ if(!function_exists('get_serverload')) {
 				$server_load = trim($load_arr[0]);
 			}
 		}
-		if(!$server_load) {
+		if(empty($server_load)) {
 			$server_load = __('N/A', 'wp-serverinfo');
 		}
 		return $server_load;

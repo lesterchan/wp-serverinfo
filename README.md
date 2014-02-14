@@ -3,7 +3,7 @@ Contributors: GamerZ
 Donate link: http://lesterchan.net/site/donation/  
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
 Requires at least: 2.8  
-Tested up to: 3.5  
+Tested up to: 3.8   
 Stable tag: trunk  
 
 Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
@@ -31,6 +31,9 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 * I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appericiate it. If not feel free to use it without any obligations.
 
 ## Changelog
+
+## 1.61
+* FIXED: PHP notices & remove eregi()
 
 ### 1.60 (09-01-2011)
 * NEW: Added memcached info if your PHP is compiled with memcached extension
