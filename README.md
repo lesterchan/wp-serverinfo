@@ -3,26 +3,18 @@ Contributors: GamerZ
 Donate link: http://lesterchan.net/site/donation/  
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
 Requires at least: 2.8  
-Tested up to: 3.8   
+Tested up to: 3.9  
 Stable tag: trunk  
 
 Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
 
 ## Description
 
-### Previous Versions
-* [WP-ServerInfo 1.40 For WordPress 2.7.x](http://downloads.wordpress.org/plugin/wp-serverinfo.1.40.zip "WP-ServerInfo 1.40 For WordPress 2.7.x")
-* [WP-ServerInfo 1.31 For WordPress 2.5.x And 2.6.x](http://downloads.wordpress.org/plugin/wp-serverinfo.1.31.zip "WP-ServerInfo 1.31 For WordPress 2.5.x And 2.6.x")
-* [WP-ServerInfo 1.00 For WordPress 2.1.x, 2.2.x And 2.3.x](http://downloads.wordpress.org/plugin/wp-serverinfo.1.00.zip "WP-ServerInfo 1.00 For WordPress 2.1.x, 2.2.x And 2.3.x")
-
 ### Development
-* [http://dev.wp-plugins.org/browser/wp-serverinfo/](http://dev.wp-plugins.org/browser/wp-serverinfo/ "http://dev.wp-plugins.org/browser/wp-serverinfo/")
+* [https://github.com/lesterchan/wp-serverinfo](https://github.com/lesterchan/wp-serverinfo "https://github.com/lesterchan/wp-serverinfo")
 
 ### Translations
 * [http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/](http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/ "http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/")
-
-### Support Forums
-* [http://forums.lesterchan.net/index.php?board=25.0](http://forums.lesterchan.net/index.php?board=25.0 "http://forums.lesterchan.net/index.php?board=25.0")
 
 ### Credits
 * Right To Left Language Support by [Kambiz R. Khojasteh](http://persian-programming.com/ "Kambiz R. Khojasteh")
