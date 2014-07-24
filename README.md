@@ -10,17 +10,20 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 
 ## Description
 
+### Build Status
+[![Build Status](https://travis-ci.org/lesterchan/wp-serverinfo.svg?branch=master)](https://travis-ci.org/lesterchan/wp-serverinfo)
+
 ### Development
-* [https://github.com/lesterchan/wp-serverinfo](https://github.com/lesterchan/wp-serverinfo "https://github.com/lesterchan/wp-serverinfo")
+[https://github.com/lesterchan/wp-serverinfo](https://github.com/lesterchan/wp-serverinfo "https://github.com/lesterchan/wp-serverinfo")
 
 ### Translations
-* [http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/](http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/ "http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/")
+[http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/](http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/ "http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/")
 
 ### Credits
 * Right To Left Language Support by [Kambiz R. Khojasteh](http://persian-programming.com/ "Kambiz R. Khojasteh")
 
 ### Donations
-* I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appericiate it. If not feel free to use it without any obligations.
+I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appericiate it. If not feel free to use it without any obligations.
 
 ## Changelog
 
