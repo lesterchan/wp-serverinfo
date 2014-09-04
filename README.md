@@ -84,10 +84,11 @@ I spent most of my free time creating, updating, maintaining and supporting thes
 N/A
 
 ## Screenshots
-
-1. General Info
-2. PHP Info
-3. MYSQL Info
+1. Dashboard
+2. General Info
+3. PHP Info
+4. MYSQL Info
+5. Memcached Info
 
 ## Frequently Asked Questions
 
