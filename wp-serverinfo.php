@@ -3,7 +3,7 @@
 Plugin Name: WP-ServerInfo
 Plugin URI: http://lesterchan.net/portfolio/programming/php/
 Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
-Version: 1.61
+Version: 1.62
 Author: Lester 'GaMerZ' Chan
 Author URI: http://lesterchan.net
 Text Domain: wp-serverinfo
@@ -11,7 +11,7 @@ Text Domain: wp-serverinfo
 
 
 /*
-	Copyright 2013 Lester Chan  (email : lesterchan@gmail.com)
+	Copyright 2015 Lester Chan  (email : lesterchan@gmail.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -66,8 +66,8 @@ function display_serverinfo() {
 
 ### Get General Information
 function get_generalinfo() {
-	global $text_direction, $is_IIS;
-	if('rtl' == $text_direction) : ?>
+	global $is_IIS;
+	if( is_rtl() ) : ?>
 		<style type="text/css">
 			#GeneralOverview table,
 			#GeneralOverview th,
@@ -82,7 +82,6 @@ function get_generalinfo() {
 	<?php endif;
 ?>
 	<div class="wrap" id="GeneralOverview">
-		<?php screen_icon(); ?>
 		<h2><?php _e('General Overview','wp-serverinfo'); ?></h2>
 		<?php serverinfo_subnavi(); ?>
 		<br class="clear" />
@@ -171,61 +170,50 @@ function get_generalinfo() {
 
 ### Get PHP Information
 function get_phpinfo() {
-	global $text_direction;
-	ob_start();
-	phpinfo();
-	$phpinfo = ob_get_contents();
-	ob_end_clean();
-	// Strip Tags
-	$phpinfo = strip_tags($phpinfo, '<table><tr><th><td>');
-	// Strip Unwanted Contents
-	$phpinfo = substr($phpinfo, strpos($phpinfo, '<table border="0" cellpadding="3" width="600">'));
-	// PHP Version Header
-	$phpinfo = preg_replace("!<table border=\"0\" cellpadding=\"3\" width=\"600\">\n<tr class=\"h\"><td>\n(.*?)\n</td></tr>\n</table>!", "<h2>$1</h2>".serverinfo_subnavi(false), $phpinfo);
-	// Normal Header
-	$phpinfo = preg_replace("!<\/table>\n(.*?)\n<table border=\"0\" cellpadding=\"3\" width=\"600\">!", "</table>\n\n<br style=\"clear\" /><h2>$1</h2>\n<table class=\"widefat\">", $phpinfo);
-	// Fixed For Credits
-	$phpinfo = preg_replace("!</table>\n<table border=\"0\" cellpadding=\"3\" width=\"600\">\n<tr class=\"v\"><td>\n\n(.*?)</td></tr>\n</table>!", "<tr onmouseover=\"this.className='highlight'\" onmouseout=\"this.className=''\"><td colspan=\"2\">$1</td></tr>\n</table>", $phpinfo);
-	// Change Width To 100%
-	$phpinfo = str_replace('<table border="0" cellpadding="3" width="600">', '<br style="clear" /><table class="widefat">', $phpinfo);
-	// Replace TR Class
-	$phpinfo = str_replace('<tr class="h">', '<tr class="thead">', $phpinfo);
-	// Get Rid Of TD Class
-	$phpinfo = str_replace('<td class="e">', '<td>', $phpinfo);
-	$phpinfo = str_replace('<td class="v">', '<td>', $phpinfo);
-	// Remove PHP Credits, Will Add It In Later
-	$phpinfo = str_replace('PHP Credits', '', $phpinfo);
-	// Can't Find A Better Way Of Doing This
-	$phpinfo = str_replace("Configuration\nPHP Core", '<br /><h2>PHP Core Configuration</h2>', $phpinfo);
-	// Make Mouse Over Effect
-	$phpinfo = str_replace('<tr>', '<tr onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'">', $phpinfo);
-	if('rtl' == $text_direction) : ?>
-		<style type="text/css">
-			#PHPinfo,
-			#PHPinfo table,
-			#PHPinfo th,
-			#PHPinfo td {
-				direction: ltr;
-				text-align: left;
-			}
-			#PHPinfo h2 {
-				padding: 0.5em 0 0;
-			}
-		</style>
-	<?php endif;
-	echo '<div class="wrap" id="PHPinfo" style="display: none;">'."\n";
-	screen_icon();
-	echo $phpinfo;
-	echo '</div>'."\n";
+	if( ! class_exists( 'DOMDocument' ) ) {
+		echo '<div class="wrap" id="PHPinfo" style="display: none;">';
+		echo '<h2>PHP ' . phpversion() . '</h2>';
+		serverinfo_subnavi();
+		echo 'You need <a href="http://php.net/manual/en/class.domdocument.php" target="_blank">DOMDocument extension</a> to be enabled.';
+		echo '</div>';
+	} else {
+		ob_start();
+		phpinfo();
+		$phpinfo = ob_get_contents();
+		ob_end_clean();
+
+		// Use DOMDocument to parse phpinfo()
+		$html = new DOMDocument( '1.0', 'UTF-8' );
+		$html->loadHTML( $phpinfo );
+
+		// Style process
+		$tables = $html->getElementsByTagName( 'table' );
+		foreach( $tables as $table ) {
+			$table->setAttribute( 'class', 'widefat' );
+		}
+
+		// We only need the <body>
+		$xpath = new DOMXPath($html);
+		$body = $xpath->query('/html/body');
+
+		// Save HTML fragment
+		$phpinfo_html = $html->saveXml( $body->item( 0 ) );
+
+		echo '<div class="wrap" id="PHPinfo" style="display: none;">';
+		echo '<h2>PHP ' . phpversion() . '</h2>';
+		serverinfo_subnavi();
+		echo $phpinfo_html;
+		echo '</div>';
+	}
 }
 
 
 ### Get MYSQL Information
 function get_mysqlinfo() {
-	global $wpdb, $text_direction;
+	global $wpdb;
 	$sqlversion = $wpdb->get_var("SELECT VERSION() AS version");
 	$mysqlinfo = $wpdb->get_results("SHOW VARIABLES");
-	if('rtl' == $text_direction) : ?>
+	if( is_rtl() ) : ?>
 		<style type="text/css">
 			#MYSQLinfo,
 			#MYSQLinfo table,
@@ -240,7 +228,6 @@ function get_mysqlinfo() {
 		</style>
 	<?php endif;
 	echo '<div class="wrap" id="MYSQLinfo" style="display: none;">'."\n";
-	screen_icon();
 	echo "<h2>MYSQL $sqlversion</h2>\n";
 	serverinfo_subnavi();
 	if($mysqlinfo) {
@@ -258,13 +245,12 @@ function get_mysqlinfo() {
 
 ### Get memcached Information (Description from https://boxpanel.blueboxgrp.com/public/the_vault/index.php/memcached_Tips)
 function get_memcachedinfo() {
-	global $text_direction;
 	echo '<div class="wrap" id="memcachedinfo" style="display: none;">'."\n";
 	if(class_exists('Memcache')) {
 		$memcached_obj = new Memcache;
 		$memcached_obj->addServer('localhost', 11211);
 		$memcachedinfo = $memcached_obj->getStats();
-		if('rtl' == $text_direction) : ?>
+		if( is_rtl() ) : ?>
 			<style type="text/css">
 				#memcachedinfo,
 				#memcachedinfo table,
@@ -278,7 +264,6 @@ function get_memcachedinfo() {
 				}
 			</style>
 		<?php endif;
-		screen_icon();
 		echo "<h2>memcached {$memcachedinfo['version']}</h2>\n";
 		serverinfo_subnavi();
 		if($memcachedinfo) {
@@ -604,10 +589,11 @@ function serverinfo_register_dashboard_widget() {
 
 ### Function: Print ServerInfo Dashboard Widget
 function wp_dashboard_serverinfo() {
-	global $text_direction;
-	if('rtl' == $text_direction) {
+	if( is_rtl() ) {
 		echo '<style type="text/css"> #wp-serverinfo ul { padding-left: 15px !important; } </style>';
 		echo '<div id="wp-serverinfo" style="direction: ltr; text-align: left;">';
+	} else {
+		echo '<div id="wp-serverinfo">';
 	}
 	echo '<p><strong>'.__('General', 'wp-serverinfo').'</strong></p>';
 	echo '<ul>';
@@ -634,8 +620,5 @@ function wp_dashboard_serverinfo() {
 	echo '<li>'. __('Index Disk Usage', 'wp-serverinfo').': <strong>'.format_filesize(get_mysql_index_usage()).'</strong></li>';
 	echo '</ul>';
 	echo '<p class="textright"><a href="'.admin_url('index.php?page=wp-serverinfo/wp-serverinfo.php').'" class="button">'.__('View all', 'wp-serverinfo').'</a></p>';
-	if('rtl' == $text_direction) {
-		echo '</div>';
-	}
+	echo '</div>';
 }
-?>
