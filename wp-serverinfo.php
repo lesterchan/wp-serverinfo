@@ -3,7 +3,7 @@
 Plugin Name: WP-ServerInfo
 Plugin URI: http://lesterchan.net/portfolio/programming/php/
 Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
-Version: 1.62
+Version: 1.63
 Author: Lester 'GaMerZ' Chan
 Author URI: http://lesterchan.net
 Text Domain: wp-serverinfo
@@ -11,7 +11,7 @@ Text Domain: wp-serverinfo
 
 
 /*
-    Copyright 2015 Lester Chan  (email : lesterchan@gmail.com)
+    Copyright 2016 Lester Chan  (email : lesterchan@gmail.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ Text Domain: wp-serverinfo
 ### Create Text Domain For Translations
 add_action('init', 'serverinfo_textdomain');
 function serverinfo_textdomain() {
-    load_plugin_textdomain('wp-serverinfo', false, 'wp-serverinfo');
+    load_plugin_textdomain( 'wp-serverinfo' );
 }
 
 

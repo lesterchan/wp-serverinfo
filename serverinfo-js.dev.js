@@ -1,21 +1,3 @@
-/*
-+----------------------------------------------------------------+
-|																							|
-|	WordPress 2.8 Plugin: WP-ServerInfo 1.60								|
-|	Copyright (c) 2009 Lester "GaMerZ" Chan									|
-|																							|
-|	File Written By:																	|
-|	- Lester "GaMerZ" Chan															|
-|	- http://lesterchan.net															|
-|																							|
-|	File Information:																	|
-|	- Server Info JavaScript File													|
-|	- wp-content/plugins/wp-serverinfo/serverinfo-js.js					|
-|																							|
-+----------------------------------------------------------------+
-*/
-
-
 // Display General Overview
 function toggle_general() {
 	jQuery('#GeneralOverview').show();
