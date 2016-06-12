@@ -27,13 +27,13 @@ I spent most of my free time creating, updating, maintaining and supporting thes
 
 ## Changelog
 
-## 1.63
+### 1.63
 * FIXED: Uses WordPress Polyglots for translation rather than po/mo
 
-## 1.62
+### 1.62
 * FIXED: phpinfo() display issue. Now uses DOMDocument to parse it
 
-## 1.61
+### 1.61
 * FIXED: PHP notices & remove eregi()
 
 ### 1.60 (09-01-2011)
