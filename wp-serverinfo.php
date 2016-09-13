@@ -3,7 +3,7 @@
 Plugin Name: WP-ServerInfo
 Plugin URI: http://lesterchan.net/portfolio/programming/php/
 Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
-Version: 1.63
+Version: 1.64
 Author: Lester 'GaMerZ' Chan
 Author URI: http://lesterchan.net
 Text Domain: wp-serverinfo
@@ -122,14 +122,14 @@ function get_generalinfo() {
                 <tr>
                     <td>GD</td>
                     <td><?php echo get_gd_version(); ?></td>
-                    <td><?php _e('PHP Short Tag', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_php_short_tag(); ?></td>
+                    <td><?php _e( 'MYSQL Query Cache Size', 'wp-serverinfo' ); ?></td>
+                    <td><?php echo format_filesize( get_mysql_query_cache_size() ); ?></td>
                 </tr>
                 <tr class="alternate">
                     <td><?php _e('Server Hostname', 'wp-serverinfo'); ?></td>
                     <td><?php echo $_SERVER['SERVER_NAME']; ?></td>
-                    <td><?php _e('PHP Safe Mode', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_php_safe_mode(); ?></td>
+                    <td><?php _e('PHP Short Tag', 'wp-serverinfo'); ?></td>
+                    <td><?php echo get_php_short_tag(); ?></td>
                 </tr>
                 <tr>
                     <td><?php _e('Server IP:Port','wp-serverinfo'); ?></td>
@@ -151,7 +151,7 @@ function get_generalinfo() {
                 </tr>
                 <tr class="alternate">
                     <td><?php _e('Server Load', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_ServerLoad(); ?></td>
+                    <td><?php echo get_serverLoad(); ?></td>
                     <td><?php _e('PHP Max Post Size', 'wp-serverinfo'); ?></td>
                     <td><?php echo format_php_size(get_php_post_max()); ?></td>
                 </tr>
@@ -378,19 +378,6 @@ if(!function_exists('get_php_short_tag')) {
 }
 
 
-### Function: Get PHP Safe Mode
-if(!function_exists('get_php_safe_mode')) {
-    function get_php_safe_mode() {
-        if(ini_get('safe_mode')) {
-            $safe_mode = __('On', 'wp-serverinfo');
-        } else {
-            $safe_mode = __('Off', 'wp-serverinfo');
-        }
-        return $safe_mode;
-    }
-}
-
-
 ### Function: Get PHP Magic Quotes GPC
 if(!function_exists('get_php_magic_quotes_gpc')) {
     function get_php_magic_quotes_gpc() {
@@ -523,6 +510,19 @@ if(!function_exists('get_mysql_max_allowed_connections')) {
             $connection_max = __('N/A', 'wp-serverinfo');
         }
         return $connection_max;
+    }
+}
+
+### Function:Get MYSQL Query Cache Size
+if(!function_exists('get_mysql_query_cache_size')) {
+    function get_mysql_query_cache_size() {
+        global $wpdb;
+        $query_cache_size_query = $wpdb->get_row( "SHOW VARIABLES LIKE 'query_cache_size'" );
+        $query_cache_size = $query_cache_size_query->Value;
+        if ( empty( $query_cache_size ) ) {
+            $query_cache_size = __( 'N/A', 'wp-serverinfo' );
+        }
+        return $query_cache_size;
     }
 }
 
