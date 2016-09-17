@@ -17,7 +17,7 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 [https://github.com/lesterchan/wp-serverinfo](https://github.com/lesterchan/wp-serverinfo "https://github.com/lesterchan/wp-serverinfo")
 
 ### Translations
-[http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/](http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/ "http://dev.wp-plugins.org/browser/wp-serverinfo/i18n/")
+[https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo](https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo "https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo")
 
 ### Credits
 * Plugin icon by [Picol](http://picol.org) from [Flaticon](http://www.flaticon.com)
