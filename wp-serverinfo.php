@@ -456,7 +456,7 @@ if(!function_exists('get_mysql_version')) {
 if(!function_exists('get_mysql_data_usage')) {
     function get_mysql_data_usage() {
         global $wpdb;
-        $data_usage = '';
+        $data_usage = 0;
         $tablesstatus = $wpdb->get_results("SHOW TABLE STATUS");
         foreach($tablesstatus as  $tablestatus) {
             $data_usage += $tablestatus->Data_length;
@@ -473,7 +473,7 @@ if(!function_exists('get_mysql_data_usage')) {
 if(!function_exists('get_mysql_index_usage')) {
     function get_mysql_index_usage() {
         global $wpdb;
-        $index_usage = '';
+        $index_usage = 0;
         $tablesstatus = $wpdb->get_results("SHOW TABLE STATUS");
         foreach($tablesstatus as  $tablestatus) {
             $index_usage +=  $tablestatus->Index_length;
