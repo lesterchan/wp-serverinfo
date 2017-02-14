@@ -267,7 +267,7 @@ function get_memcachedinfo() {
         echo "<h2>memcached {$memcachedinfo['version']}</h2>\n";
         serverinfo_subnavi();
         if($memcachedinfo) {
-            $cache_hit= (($memcachedinfo['get_hits']/$memcachedinfo['cmd_get']) * 100);
+            $cache_hit= ( $memcachedinfo['cmd_get'] > 0 ? ( ( $memcachedinfo['get_hits'] / $memcachedinfo['cmd_get'] ) * 100 ) : 0 );
             $cache_hit = round($cache_hit, 2);
             $cache_miss = 100 - $cache_hit;
 
@@ -461,9 +461,7 @@ if(!function_exists('get_mysql_data_usage')) {
         foreach($tablesstatus as  $tablestatus) {
             $data_usage += $tablestatus->Data_length;
         }
-        if (!$data_usage) {
-            $data_usage = __('N/A', 'wp-serverinfo');
-        }
+
         return $data_usage;
     }
 }
@@ -478,9 +476,7 @@ if(!function_exists('get_mysql_index_usage')) {
         foreach($tablesstatus as  $tablestatus) {
             $index_usage +=  $tablestatus->Index_length;
         }
-        if (!$index_usage){
-            $index_usage = __('N/A', 'wp-serverinfo');
-        }
+
         return $index_usage;
     }
 }
@@ -491,11 +487,8 @@ if(!function_exists('get_mysql_max_allowed_packet')) {
     function get_mysql_max_allowed_packet() {
         global $wpdb;
         $packet_max_query = $wpdb->get_row("SHOW VARIABLES LIKE 'max_allowed_packet'");
-        $packet_max = $packet_max_query->Value;
-        if(!$packet_max) {
-            $packet_max = __('N/A', 'wp-serverinfo');
-        }
-        return $packet_max;
+
+        return $packet_max_query->Value;
     }
 }
 
@@ -505,11 +498,8 @@ if(!function_exists('get_mysql_max_allowed_connections')) {
     function get_mysql_max_allowed_connections() {
         global $wpdb;
         $connection_max_query = $wpdb->get_row("SHOW VARIABLES LIKE 'max_connections'");
-        $connection_max = $connection_max_query->Value;
-        if(!$connection_max) {
-            $connection_max = __('N/A', 'wp-serverinfo');
-        }
-        return $connection_max;
+
+        return $connection_max_query->Value;
     }
 }
 
@@ -518,11 +508,8 @@ if(!function_exists('get_mysql_query_cache_size')) {
     function get_mysql_query_cache_size() {
         global $wpdb;
         $query_cache_size_query = $wpdb->get_row( "SHOW VARIABLES LIKE 'query_cache_size'" );
-        $query_cache_size = $query_cache_size_query->Value;
-        if ( empty( $query_cache_size ) ) {
-            $query_cache_size = __( 'N/A', 'wp-serverinfo' );
-        }
-        return $query_cache_size;
+
+        return $query_cache_size_query->Value;
     }
 }
 
