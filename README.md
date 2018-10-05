@@ -3,8 +3,8 @@ Contributors: GamerZ
 Donate link: http://lesterchan.net/site/donation/  
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
 Requires at least: 4.0  
-Tested up to: 4.7
-Stable tag: trunk  
+Tested up to: 4.9  
+Stable tag: 1.65  
 
 Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
 
@@ -26,6 +26,9 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
 
 ## Changelog
+
+### 1.65
+* NEW: Bump version to force update
 
 ### 1.64
 * FIXED: Remove safe mode and replace it with MySQL Query Cache Size
