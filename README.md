@@ -3,7 +3,7 @@ Contributors: GamerZ
 Donate link: http://lesterchan.net/site/donation/  
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
 Requires at least: 4.0  
-Tested up to: 5.0
+Tested up to: 5.0  
 Stable tag: 1.65  
 
 Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
