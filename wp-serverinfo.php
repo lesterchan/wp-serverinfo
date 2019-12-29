@@ -574,9 +574,10 @@ function wp_dashboard_serverinfo() {
     echo '<p><strong>PHP</strong></p>';
     echo '<ul>';
     echo '<li>v<strong>'.PHP_VERSION.'</strong></li>';
-    echo '<li>GD: <strong>'.get_gd_version().'</strong></li>';
-    echo '<li>'. __('Magic Quotes GPC', 'wp-serverinfo').': <strong>'.get_php_magic_quotes_gpc().'</strong></li>';
+    echo '<li>GD: <strong>'.get_gd_version().'</strong></li>';q
     echo '<li>'. __('Memory Limit', 'wp-serverinfo').': <strong>'.format_php_size(get_php_memory_limit()).'</strong></li>';
+    echo '<li>'. __('Max Script Execute Time', 'wp-serverinfo').': <strong>'.get_php_max_execution().'s</strong></li>';
+    echo '<li>'. __('Max Post Size', 'wp-serverinfo').': <strong>'. format_php_size(get_php_post_max()).'</strong></li>';
     echo '<li>'. __('Max Upload Size', 'wp-serverinfo').': <strong>'.format_php_size(get_php_upload_max()).'</strong></li>';
     echo '</ul>';
     echo '<p><strong>MYSQL</strong></p>';
