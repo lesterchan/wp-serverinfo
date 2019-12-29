@@ -134,8 +134,8 @@ function get_generalinfo() {
                 <tr>
                     <td><?php _e('Server IP:Port','wp-serverinfo'); ?></td>
                     <td><?php echo ($is_IIS ? $_SERVER['LOCAL_ADDR'] : $_SERVER['SERVER_ADDR']); ?>:<?php echo $_SERVER['SERVER_PORT']; ?></td>
-                    <td><?php _e('PHP Magic Quotes GPC', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_php_magic_quotes_gpc(); ?></td>
+                    <td><?php _e('PHP Max Script Execute Time', 'wp-serverinfo'); ?></td>
+                    <td><?php echo get_php_max_execution(); ?>s</td>
                 </tr>
                 <tr class="alternate">
                     <td><?php _e('Server Document Root','wp-serverinfo'); ?></td>
@@ -144,8 +144,8 @@ function get_generalinfo() {
                     <td><?php echo format_php_size(get_php_memory_limit()); ?></td>
                 </tr>
                 <tr>
-                    <td><?php _e('Server Admin', 'wp-serverinfo'); ?></td>
-                    <td><?php echo (isset($_SERVER['SERVER_ADMIN']) ? $_SERVER['SERVER_ADMIN']: ''); ?></td>
+                    <td><?php _e('Server Date/Time', 'wp-serverinfo'); ?></td>
+                    <td><?php echo mysql2date(sprintf(__('%s @ %s', 'wp-postratings'), get_option('date_format'), get_option('time_format')), current_time('mysql')); ?></td>
                     <td><?php _e('PHP Max Upload Size', 'wp-serverinfo'); ?></td>
                     <td><?php echo format_php_size(get_php_upload_max()); ?></td>
                 </tr>
@@ -154,12 +154,6 @@ function get_generalinfo() {
                     <td><?php echo get_serverLoad(); ?></td>
                     <td><?php _e('PHP Max Post Size', 'wp-serverinfo'); ?></td>
                     <td><?php echo format_php_size(get_php_post_max()); ?></td>
-                </tr>
-                <tr>
-                    <td><?php _e('Server Date/Time', 'wp-serverinfo'); ?></td>
-                    <td><?php echo mysql2date(sprintf(__('%s @ %s', 'wp-postratings'), get_option('date_format'), get_option('time_format')), current_time('mysql')); ?></td>
-                    <td><?php _e('PHP Max Script Execute Time', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_php_max_execution(); ?>s</td>
                 </tr>
             </tbody>
         </table>
@@ -374,19 +368,6 @@ if(!function_exists('get_php_short_tag')) {
             $short_tag = __('Off', 'wp-serverinfo');
         }
         return $short_tag;
-    }
-}
-
-
-### Function: Get PHP Magic Quotes GPC
-if(!function_exists('get_php_magic_quotes_gpc')) {
-    function get_php_magic_quotes_gpc() {
-        if(get_magic_quotes_gpc()) {
-            $magic_quotes_gpc = __('On', 'wp-serverinfo');
-        } else {
-            $magic_quotes_gpc = __('Off', 'wp-serverinfo');
-        }
-        return $magic_quotes_gpc;
     }
 }
 

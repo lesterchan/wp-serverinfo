@@ -4,7 +4,7 @@ Donate link: http://lesterchan.net/site/donation/
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
 Requires at least: 4.0  
 Tested up to: 5.3  
-Stable tag: 1.65  
+Stable tag: 1.66  
 
 Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
 
@@ -26,6 +26,8 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
 
 ## Changelog
+### 1.66
+* NEW: Remove get_php_magic_quotes_gpc() and SERVER_ADMIN
 
 ### 1.65
 * NEW: Bump version to force update
