@@ -534,8 +534,10 @@ if(!function_exists('get_serverload')) {
             } else {
                 $data = @system('uptime');
                 preg_match('/(.*):{1}(.*)/', $data, $matches);
-                $load_arr = explode(',', $matches[2]);
-                $server_load = trim($load_arr[0]);
+                if( isset( $matches[2] ) ) {
+                    $load_arr = explode(',', $matches[2]);
+                    $server_load = trim($load_arr[0]);
+                }
             }
         }
         if(empty($server_load)) {
