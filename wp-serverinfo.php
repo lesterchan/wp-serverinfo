@@ -532,11 +532,32 @@ if(!function_exists('get_serverload')) {
                     $server_load = trim($load_avg[0]);
                 }
             } else {
-                $data = @system('uptime');
-                preg_match('/(.*):{1}(.*)/', $data, $matches);
-                if( isset( $matches[2] ) ) {
-                    $load_arr = explode(',', $matches[2]);
-                    $server_load = trim($load_arr[0]);
+                $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+                if(function_exists('system') && !in_array('system', $disabled_functions)) {
+                    $data = @system('uptime');
+                    if($data !== false) {
+                        preg_match('/(.*):{1}(.*)/', $data, $matches);
+                        if(isset($matches[2])) {
+                            $load_arr = explode(',', $matches[2]);
+                            $server_load = trim($load_arr[0]);
+                        }
+                    }
+                } elseif(function_exists('exec') && !in_array('exec', $disabled_functions)) {
+                    $data = @exec('uptime 2>&1', $output, $return_var);
+                    if($return_var === 0 && !empty($data)) {
+                        preg_match('/load average[s]?:\s*([0-9\.]+)/', $data, $matches);
+                        if(isset($matches[1])) {
+                            $server_load = $matches[1];
+                        }
+                    }
+                } elseif(function_exists('shell_exec') && !in_array('shell_exec', $disabled_functions)) {
+                    $data = @shell_exec('uptime 2>&1');
+                    if(!empty($data)) {
+                        preg_match('/load average[s]?:\s*([0-9\.]+)/', $data, $matches);
+                        if(isset($matches[1])) {
+                            $server_load = $matches[1];
+                        }
+                    }
                 }
             }
         }
