@@ -490,7 +490,7 @@ if(!function_exists('get_mysql_query_cache_size')) {
         global $wpdb;
         $query_cache_size_query = $wpdb->get_row( "SHOW VARIABLES LIKE 'query_cache_size'" );
 
-        return $query_cache_size_query->Value;
+        return $query_cache_size_query ? $query_cache_size_query->Value : 0;
     }
 }
 
