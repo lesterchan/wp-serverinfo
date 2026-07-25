@@ -41,17 +41,6 @@ defined( 'ABSPATH' ) || exit;
 // Plugin version.
 define( 'WP_SERVERINFO_VERSION', '2.0.0' );
 
-add_action( 'init', 'serverinfo_textdomain' );
-/**
- * Load the plugin text domain for translations.
- *
- * @return void
- */
-function serverinfo_textdomain() {
-	load_plugin_textdomain( 'wp-serverinfo' );
-}
-
-
 add_action( 'admin_menu', 'serverinfo_menu' );
 /**
  * Register the WP-ServerInfo submenu page under the Dashboard menu.
