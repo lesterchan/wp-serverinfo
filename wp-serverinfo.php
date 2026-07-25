@@ -1,16 +1,17 @@
 <?php
-/*
-Plugin Name: WP-ServerInfo
-Plugin URI: https://lesterchan.net/portfolio/programming/php/
-Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
-Version: 1.66.1
-Author: Lester 'GaMerZ' Chan
-Author URI: https://lesterchan.net
-Text Domain: wp-serverinfo
-Requires at least: 4.0
-Requires PHP: 7.2
-*/
-
+/**
+ * Plugin Name: WP-ServerInfo
+ * Plugin URI: https://lesterchan.net/portfolio/programming/php/
+ * Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
+ * Version: 1.66.1
+ * Author: Lester 'GaMerZ' Chan
+ * Author URI: https://lesterchan.net
+ * Text Domain: wp-serverinfo
+ * Requires at least: 4.0
+ * Requires PHP: 7.2
+ *
+ * @package WP-ServerInfo
+ */
 
 /*
 	Copyright 2026 Lester Chan  (email : lesterchan@gmail.com)
@@ -31,21 +32,29 @@ Requires PHP: 7.2
 */
 
 
-// Prevent Direct Access
+// Prevent direct access.
 defined( 'ABSPATH' ) || exit;
 
-// Version
+// Plugin version.
 define( 'WP_SERVERINFO_VERSION', '1.66.1' );
 
-// Create Text Domain For Translations
 add_action( 'init', 'serverinfo_textdomain' );
+/**
+ * Load the plugin text domain for translations.
+ *
+ * @return void
+ */
 function serverinfo_textdomain() {
 	load_plugin_textdomain( 'wp-serverinfo' );
 }
 
 
-// Function: WP-ServerInfo Menu
 add_action( 'admin_menu', 'serverinfo_menu' );
+/**
+ * Register the WP-ServerInfo submenu page under the Dashboard menu.
+ *
+ * @return void
+ */
 function serverinfo_menu() {
 	if ( function_exists( 'add_submenu_page' ) ) {
 		add_submenu_page( 'index.php', __( 'WP-ServerInfo', 'wp-serverinfo' ), __( 'WP-ServerInfo', 'wp-serverinfo' ), 'manage_options', 'wp-serverinfo', 'display_serverinfo' );
@@ -53,8 +62,13 @@ function serverinfo_menu() {
 }
 
 
-// Function: Enqueue ServerInfo JavaScript In WP-Admin
 add_action( 'admin_enqueue_scripts', 'serverinfo_scripts_admin' );
+/**
+ * Enqueue the inline ServerInfo JavaScript on the plugin's admin page.
+ *
+ * @param string $hook_suffix The current admin page hook suffix.
+ * @return void
+ */
 function serverinfo_scripts_admin( $hook_suffix ) {
 	$serverinfo_admin_pages = array( 'dashboard_page_wp-serverinfo' );
 	if ( in_array( $hook_suffix, $serverinfo_admin_pages, true ) ) {
@@ -85,7 +99,11 @@ JS;
 }
 
 
-// Display WP-ServerInfo Admin Page
+/**
+ * Render the WP-ServerInfo admin page (all four panels).
+ *
+ * @return void
+ */
 function display_serverinfo() {
 	echo '<style type="text/css">#GeneralOverview .widefat tbody tr:hover td, #PHPinfo .widefat tbody tr:hover td, #MYSQLinfo .widefat tbody tr:hover td, #memcachedinfo .widefat tbody tr:hover td { background-color: #f6f7f7; }</style>' . "\n";
 	get_generalinfo();
@@ -95,7 +113,11 @@ function display_serverinfo() {
 }
 
 
-// Get General Information
+/**
+ * Output the General Overview panel.
+ *
+ * @return void
+ */
 function get_generalinfo() {
 	global $is_IIS;
 	if ( is_rtl() ) : ?>
@@ -194,13 +216,17 @@ function get_generalinfo() {
 }
 
 
-// Get PHP Information
+/**
+ * Output the PHP Information panel, built from structured PHP data.
+ *
+ * @return void
+ */
 function get_phpinfo() {
 	echo '<div class="wrap" id="PHPinfo" style="display: none;">' . "\n";
 	echo '<h2>PHP ' . esc_html( phpversion() ) . '</h2>' . "\n";
 	serverinfo_subnavi();
 
-	// Summary built from structured PHP data (no phpinfo() HTML scraping)
+	// Summary built from structured PHP data (no phpinfo() HTML scraping).
 	$summary = array(
 		__( 'PHP Version', 'wp-serverinfo' )               => phpversion(),
 		__( 'Zend Engine Version', 'wp-serverinfo' )       => zend_version(),
@@ -215,7 +241,7 @@ function get_phpinfo() {
 	}
 	echo '</tbody></table>' . "\n";
 
-	// Configuration directives from ini_get_all()
+	// Configuration directives from ini_get_all().
 	$ini = function_exists( 'ini_get_all' ) ? ini_get_all( null, true ) : false;
 	if ( ! empty( $ini ) ) {
 		ksort( $ini );
@@ -232,7 +258,11 @@ function get_phpinfo() {
 }
 
 
-// Get MYSQL Information
+/**
+ * Output the MYSQL Information panel (server variables).
+ *
+ * @return void
+ */
 function get_mysqlinfo() {
 	global $wpdb;
 	// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
@@ -272,16 +302,24 @@ function get_mysqlinfo() {
 }
 
 
-// Function: Whether A memcached PHP Extension Is Available
 if ( ! function_exists( 'serverinfo_has_memcached' ) ) {
+	/**
+	 * Determine whether a memcached PHP extension is available.
+	 *
+	 * @return bool True when the Memcached or Memcache extension is loaded.
+	 */
 	function serverinfo_has_memcached() {
 		return class_exists( 'Memcached' ) || class_exists( 'Memcache' );
 	}
 }
 
 
-// Function: Get memcached Server Statistics (Prefers Memcached, Falls Back To Memcache)
 if ( ! function_exists( 'serverinfo_get_memcached_stats' ) ) {
+	/**
+	 * Fetch memcached server statistics, preferring Memcached over Memcache.
+	 *
+	 * @return array|false Flat stats array for the local server, or false when unavailable.
+	 */
 	function serverinfo_get_memcached_stats() {
 		if ( class_exists( 'Memcached' ) ) {
 			$memcached_obj = new Memcached();
@@ -299,7 +337,13 @@ if ( ! function_exists( 'serverinfo_get_memcached_stats' ) ) {
 }
 
 
-// Get memcached Information (Description from https://boxpanel.blueboxgrp.com/public/the_vault/index.php/memcached_Tips)
+/**
+ * Output the memcached Information panel.
+ *
+ * Stat descriptions from https://boxpanel.blueboxgrp.com/public/the_vault/index.php/memcached_Tips
+ *
+ * @return void
+ */
 function get_memcachedinfo() {
 	echo '<div class="wrap" id="memcachedinfo" style="display: none;">' . "\n";
 	if ( serverinfo_has_memcached() ) {
@@ -334,7 +378,7 @@ function get_memcachedinfo() {
 			echo '<table class="widefat" dir="ltr">' . "\n";
 			echo '<thead><tr><th>' . esc_html__( 'Variable Name', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Value', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Description', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
 
-			// Each row: variable name, pre-formatted value, description. All three cells are escaped uniformly below.
+			// Each row: variable name, pre-formatted value, and description; all three cells are escaped uniformly below.
 			$memcached_rows = array(
 				array( 'pid', $memcachedinfo['pid'], __( 'Process ID', 'wp-serverinfo' ) ),
 				array( 'uptime', $uptime, __( 'Number of days since the process was started', 'wp-serverinfo' ) ),
@@ -377,7 +421,12 @@ function get_memcachedinfo() {
 }
 
 
-// WP-Server Sub Navigation
+/**
+ * Build (and optionally echo) the panel sub-navigation.
+ *
+ * @param bool $display Whether to echo the markup (true) or return it (false).
+ * @return void|string Markup when $display is false, otherwise void.
+ */
 function serverinfo_subnavi( $display = true ) {
 	$output  = '<p style="text-align: center">';
 	$output .= '<a href="#GeneralOverview" class="serverinfo-nav" data-target="GeneralOverview">' . esc_html__( 'Display General Overview', 'wp-serverinfo' ) . '</a>';
@@ -395,8 +444,13 @@ function serverinfo_subnavi( $display = true ) {
 }
 
 
-// Function: Format Bytes Into TiB/GiB/MiB/KiB/Bytes
 if ( ! function_exists( 'format_filesize' ) ) {
+	/**
+	 * Format a byte count into a localized TiB/GiB/MiB/KiB/bytes string.
+	 *
+	 * @param int|float $raw_size Size in bytes.
+	 * @return string Human-readable, localized size.
+	 */
 	function format_filesize( $raw_size ) {
 		if ( $raw_size / 1099511627776 > 1 ) {
 			return number_format_i18n( $raw_size / 1099511627776, 1 ) . ' ' . __( 'TiB', 'wp-serverinfo' );
@@ -414,7 +468,12 @@ if ( ! function_exists( 'format_filesize' ) ) {
 	}
 }
 
-// Function: Convert PHP Size Format to Localized
+/**
+ * Convert a PHP shorthand size (e.g. "128M") into a localized size string.
+ *
+ * @param string|int $size PHP size value, shorthand or numeric.
+ * @return string Localized size, or the original value when not numeric.
+ */
 function format_php_size( $size ) {
 	if ( ! is_numeric( $size ) ) {
 		if ( strpos( $size, 'M' ) !== false ) {
@@ -428,8 +487,12 @@ function format_php_size( $size ) {
 	return is_numeric( $size ) ? format_filesize( $size ) : $size;
 }
 
-// Function: Get PHP Short Tag
 if ( ! function_exists( 'get_php_short_tag' ) ) {
+	/**
+	 * Get the short_open_tag ini state as a localized On/Off string.
+	 *
+	 * @return string Localized "On" or "Off".
+	 */
 	function get_php_short_tag() {
 		if ( ini_get( 'short_open_tag' ) ) {
 			$short_tag = __( 'On', 'wp-serverinfo' );
@@ -441,8 +504,12 @@ if ( ! function_exists( 'get_php_short_tag' ) ) {
 }
 
 
-// Function: Get PHP Max Upload Size
 if ( ! function_exists( 'get_php_upload_max' ) ) {
+	/**
+	 * Get the upload_max_filesize ini value.
+	 *
+	 * @return string The configured value, or a localized "N/A".
+	 */
 	function get_php_upload_max() {
 		if ( ini_get( 'upload_max_filesize' ) ) {
 			$upload_max = ini_get( 'upload_max_filesize' );
@@ -454,8 +521,12 @@ if ( ! function_exists( 'get_php_upload_max' ) ) {
 }
 
 
-// Function: Get PHP Max Post Size
 if ( ! function_exists( 'get_php_post_max' ) ) {
+	/**
+	 * Get the post_max_size ini value.
+	 *
+	 * @return string The configured value, or a localized "N/A".
+	 */
 	function get_php_post_max() {
 		if ( ini_get( 'post_max_size' ) ) {
 			$post_max = ini_get( 'post_max_size' );
@@ -467,8 +538,12 @@ if ( ! function_exists( 'get_php_post_max' ) ) {
 }
 
 
-// Function: PHP Maximum Execution Time
 if ( ! function_exists( 'get_php_max_execution' ) ) {
+	/**
+	 * Get the max_execution_time ini value.
+	 *
+	 * @return string The configured value, or a localized "N/A".
+	 */
 	function get_php_max_execution() {
 		if ( ini_get( 'max_execution_time' ) ) {
 			$max_execute = ini_get( 'max_execution_time' );
@@ -480,8 +555,12 @@ if ( ! function_exists( 'get_php_max_execution' ) ) {
 }
 
 
-// Function: PHP Memory Limit
 if ( ! function_exists( 'get_php_memory_limit' ) ) {
+	/**
+	 * Get the memory_limit ini value.
+	 *
+	 * @return string The configured value, or a localized "N/A".
+	 */
 	function get_php_memory_limit() {
 		if ( ini_get( 'memory_limit' ) ) {
 			$memory_limit = ini_get( 'memory_limit' );
@@ -493,8 +572,12 @@ if ( ! function_exists( 'get_php_memory_limit' ) ) {
 }
 
 
-// Function: Get MYSQL Version
 if ( ! function_exists( 'get_mysql_version' ) ) {
+	/**
+	 * Get the MySQL server version.
+	 *
+	 * @return string|null Version string, or null on failure.
+	 */
 	function get_mysql_version() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
@@ -503,8 +586,12 @@ if ( ! function_exists( 'get_mysql_version' ) ) {
 }
 
 
-// Function: Get MYSQL Table Status (Cached Per Request)
 if ( ! function_exists( 'serverinfo_get_table_status' ) ) {
+	/**
+	 * Get SHOW TABLE STATUS rows, cached in a static for the request.
+	 *
+	 * @return array List of table status row objects.
+	 */
 	function serverinfo_get_table_status() {
 		global $wpdb;
 		static $tablesstatus = null;
@@ -517,8 +604,12 @@ if ( ! function_exists( 'serverinfo_get_table_status' ) ) {
 }
 
 
-// Function: Get MYSQL Data Usage
 if ( ! function_exists( 'get_mysql_data_usage' ) ) {
+	/**
+	 * Sum the data length across all database tables.
+	 *
+	 * @return int Total data length in bytes.
+	 */
 	function get_mysql_data_usage() {
 		$data_usage = 0;
 		foreach ( serverinfo_get_table_status() as $tablestatus ) {
@@ -530,8 +621,12 @@ if ( ! function_exists( 'get_mysql_data_usage' ) ) {
 }
 
 
-// Function: Get MYSQL Index Usage
 if ( ! function_exists( 'get_mysql_index_usage' ) ) {
+	/**
+	 * Sum the index length across all database tables.
+	 *
+	 * @return int Total index length in bytes.
+	 */
 	function get_mysql_index_usage() {
 		$index_usage = 0;
 		foreach ( serverinfo_get_table_status() as $tablestatus ) {
@@ -543,8 +638,12 @@ if ( ! function_exists( 'get_mysql_index_usage' ) ) {
 }
 
 
-// Function: Get MYSQL Max Allowed Packet
 if ( ! function_exists( 'get_mysql_max_allowed_packet' ) ) {
+	/**
+	 * Get the MySQL max_allowed_packet value.
+	 *
+	 * @return string|null Value in bytes, or null on failure.
+	 */
 	function get_mysql_max_allowed_packet() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
@@ -555,8 +654,12 @@ if ( ! function_exists( 'get_mysql_max_allowed_packet' ) ) {
 }
 
 
-// Function:Get MYSQL Max Allowed Connections
 if ( ! function_exists( 'get_mysql_max_allowed_connections' ) ) {
+	/**
+	 * Get the MySQL max_connections value.
+	 *
+	 * @return string|null Maximum connections, or null on failure.
+	 */
 	function get_mysql_max_allowed_connections() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
@@ -566,8 +669,14 @@ if ( ! function_exists( 'get_mysql_max_allowed_connections' ) ) {
 	}
 }
 
-// Function:Get MYSQL Query Cache Size
 if ( ! function_exists( 'get_mysql_query_cache_size' ) ) {
+	/**
+	 * Get the MySQL query_cache_size value.
+	 *
+	 * Returns 0 on MySQL 8.0+, where the query cache was removed.
+	 *
+	 * @return string|int Value in bytes, or 0 when unavailable.
+	 */
 	function get_mysql_query_cache_size() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
@@ -578,8 +687,12 @@ if ( ! function_exists( 'get_mysql_query_cache_size' ) ) {
 }
 
 
-// Function: Get GD Version
 if ( ! function_exists( 'get_gd_version' ) ) {
+	/**
+	 * Get the installed GD library version.
+	 *
+	 * @return string GD version, or a localized "N/A" when undetectable.
+	 */
 	function get_gd_version() {
 		if ( function_exists( 'gd_info' ) ) {
 			$gd = gd_info();
@@ -604,8 +717,12 @@ if ( ! function_exists( 'get_gd_version' ) ) {
 }
 
 
-// Function: Get The Server Load
 if ( ! function_exists( 'get_serverload' ) ) {
+	/**
+	 * Get the current server load average (Unix-like hosts only).
+	 *
+	 * @return string 1-minute load average, or a localized "N/A".
+	 */
 	function get_serverload() {
 		$server_load = '';
 		// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions, WordPress.PHP.DiscouragedPHPFunctions -- probing the host for load average; @-suppression and low-level/shell calls are intentional and gated behind availability and disable_functions checks.
@@ -657,8 +774,12 @@ if ( ! function_exists( 'get_serverload' ) ) {
 }
 
 
-// Function: Register ServerInfo Dashboard Widget
 add_action( 'wp_dashboard_setup', 'serverinfo_register_dashboard_widget' );
+/**
+ * Register the Server Information dashboard widget for administrators.
+ *
+ * @return void
+ */
 function serverinfo_register_dashboard_widget() {
 	if ( current_user_can( 'manage_options' ) ) {
 		wp_add_dashboard_widget( 'dashboard_serverinfo', __( 'Server Information', 'wp-serverinfo' ), 'wp_dashboard_serverinfo' );
@@ -666,7 +787,11 @@ function serverinfo_register_dashboard_widget() {
 }
 
 
-// Function: Print ServerInfo Dashboard Widget
+/**
+ * Render the Server Information dashboard widget contents.
+ *
+ * @return void
+ */
 function wp_dashboard_serverinfo() {
 	if ( is_rtl() ) {
 		echo '<style type="text/css"> #wp-serverinfo ul { padding-left: 15px !important; } </style>';
