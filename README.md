@@ -1,17 +1,14 @@
 # WP-ServerInfo
 Contributors: GamerZ  
 Donate link: https://lesterchan.net/site/donation/  
-Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache, redis  
-Requires at least: 4.0  
+Tags: phpinfo, mysql, php, memcached, redis  
+Requires at least: 4.6  
 Tested up to: 7.0  
 Stable tag: 2.0.0  
 
-Display your host's PHP, MYSQL, memcached & Redis (if installed) information on your WordPress dashboard.
+Display your host's PHP, MYSQL, memcached & Redis information on your WordPress dashboard.
 
 ## Description
-
-### Build Status
-[![Build Status](https://travis-ci.org/lesterchan/wp-serverinfo.svg?branch=master)](https://travis-ci.org/lesterchan/wp-serverinfo)
 
 ### Development
 [https://github.com/lesterchan/wp-serverinfo](https://github.com/lesterchan/wp-serverinfo "https://github.com/lesterchan/wp-serverinfo")
@@ -20,7 +17,7 @@ Display your host's PHP, MYSQL, memcached & Redis (if installed) information on 
 [https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo](https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo "https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo")
 
 ### Credits
-* Plugin icon by [Picol](http://picol.org) from [Flaticon](http://www.flaticon.com)
+* Plugin icon by [Picol](https://picol.org) from [Flaticon](https://www.flaticon.com)
 
 ### Donations
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
