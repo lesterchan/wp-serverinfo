@@ -27,7 +27,7 @@ I spent most of my free time creating, updating, maintaining and supporting thes
 
 ## Changelog
 ### 2.0.0
-* NEW: Redis information panel (via the phpredis extension)
+* NEW: Redis information panel and dashboard-widget section (via the phpredis extension)
 * NEW: Redesigned admin page with native WordPress tabs (bookmarkable, no JavaScript required)
 * NEW: WordPress 7.0
 * FIX: Escape server/PHP/MySQL/memcached output to prevent XSS

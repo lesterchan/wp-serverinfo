@@ -903,6 +903,23 @@ function wp_dashboard_serverinfo() {
 	echo '<li>' . esc_html__( 'Data Disk Usage', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_data_usage() ) ) . '</strong></li>';
 	echo '<li>' . esc_html__( 'Index Disk Usage', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_index_usage() ) ) . '</strong></li>';
 	echo '</ul>';
+	if ( serverinfo_has_redis() ) {
+		$redisinfo = serverinfo_get_redis_stats();
+		if ( $redisinfo ) {
+			$hits    = isset( $redisinfo['keyspace_hits'] ) ? (int) $redisinfo['keyspace_hits'] : 0;
+			$misses  = isset( $redisinfo['keyspace_misses'] ) ? (int) $redisinfo['keyspace_misses'] : 0;
+			$lookups = $hits + $misses;
+			$hit_pct = $lookups > 0 ? round( ( $hits / $lookups ) * 100, 2 ) : 0;
+			echo '<p><strong>Redis</strong></p>';
+			echo '<ul>';
+			echo '<li>v<strong>' . esc_html( $redisinfo['redis_version'] ?? '' ) . '</strong></li>';
+			echo '<li>' . esc_html__( 'Uptime', 'wp-serverinfo' ) . ': <strong>' . esc_html( number_format_i18n( $redisinfo['uptime_in_days'] ?? 0 ) ) . ' ' . esc_html__( 'days', 'wp-serverinfo' ) . '</strong></li>';
+			echo '<li>' . esc_html__( 'Used Memory', 'wp-serverinfo' ) . ': <strong>' . esc_html( $redisinfo['used_memory_human'] ?? format_filesize( $redisinfo['used_memory'] ?? 0 ) ) . '</strong></li>';
+			echo '<li>' . esc_html__( 'Connected Clients', 'wp-serverinfo' ) . ': <strong>' . esc_html( number_format_i18n( $redisinfo['connected_clients'] ?? 0 ) ) . '</strong></li>';
+			echo '<li>' . esc_html__( 'Hit Ratio', 'wp-serverinfo' ) . ': <strong>' . esc_html( $hit_pct ) . '%</strong></li>';
+			echo '</ul>';
+		}
+	}
 	echo '<p class="textright"><a href="' . esc_url( admin_url( 'index.php?page=wp-serverinfo' ) ) . '" class="button">' . esc_html__( 'View all', 'wp-serverinfo' ) . '</a></p>';
 	echo '</div>';
 }
