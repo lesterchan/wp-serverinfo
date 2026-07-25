@@ -16,9 +16,6 @@ Display your host's PHP, MYSQL, memcached & Redis information on your WordPress 
 ### Development
 [https://github.com/lesterchan/wp-serverinfo](https://github.com/lesterchan/wp-serverinfo "https://github.com/lesterchan/wp-serverinfo")
 
-### Translations
-[https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo](https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo "https://translate.wordpress.org/projects/wp-plugins/wp-serverinfo")
-
 ### Credits
 * Plugin icon by [Picol](https://picol.org) from [Flaticon](https://www.flaticon.com)
 
