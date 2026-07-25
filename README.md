@@ -117,4 +117,4 @@ N/A
 
 ## Frequently Asked Questions
 
-[WP-ServerInfo Support Forums](http://forums.lesterchan.net/index.php?board=25.0 "WP-ServerInfo Support Forums")
+[WP-ServerInfo Support Forums](https://wordpress.org/support/plugin/wp-serverinfo/ "WP-ServerInfo Support Forums")
