@@ -1,12 +1,12 @@
 # WP-ServerInfo
 Contributors: GamerZ  
 Donate link: http://lesterchan.net/site/donation/  
-Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
+Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache, redis  
 Requires at least: 4.0  
 Tested up to: 7.0  
-Stable tag: 1.66.1  
+Stable tag: 2.0.0  
 
-Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
+Display your host's PHP, MYSQL, memcached & Redis (if installed) information on your WordPress dashboard.
 
 ## Description
 
@@ -26,7 +26,9 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
 
 ## Changelog
-### 1.66.1
+### 2.0.0
+* NEW: Redis information panel (via the phpredis extension)
+* NEW: Redesigned admin page with native WordPress tabs (bookmarkable, no JavaScript required)
 * NEW: WordPress 7.0
 * FIX: Escape server/PHP/MySQL/memcached output to prevent XSS
 * FIX: Guard $_SERVER access to avoid warnings when keys are unset
@@ -36,6 +38,7 @@ I spent most of my free time creating, updating, maintaining and supporting thes
 * CHANGE: Prefer the Memcached extension, falling back to Memcache
 * CHANGE: Add direct-access (ABSPATH) guard
 * CHANGE: Rebuild PHP tab from ini_get_all() instead of scraping phpinfo() output (no longer exposes environment variables / request headers)
+* CHANGE: Bring the codebase up to WordPress Coding Standards (phpcbf + docblocks)
 
 ### 1.66
 * NEW: Remove get_php_magic_quotes_gpc() and SERVER_ADMIN

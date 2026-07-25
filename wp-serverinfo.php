@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WP-ServerInfo
  * Plugin URI: https://lesterchan.net/portfolio/programming/php/
- * Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
- * Version: 1.66.1
+ * Description: Display your host's PHP, MYSQL, memcached & Redis (if installed) information on your WordPress dashboard.
+ * Version: 2.0.0
  * Author: Lester 'GaMerZ' Chan
  * Author URI: https://lesterchan.net
  * Text Domain: wp-serverinfo
@@ -36,7 +36,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // Plugin version.
-define( 'WP_SERVERINFO_VERSION', '1.66.1' );
+define( 'WP_SERVERINFO_VERSION', '2.0.0' );
 
 add_action( 'init', 'serverinfo_textdomain' );
 /**
@@ -62,54 +62,74 @@ function serverinfo_menu() {
 }
 
 
-add_action( 'admin_enqueue_scripts', 'serverinfo_scripts_admin' );
 /**
- * Enqueue the inline ServerInfo JavaScript on the plugin's admin page.
+ * Render the WP-ServerInfo admin page as tabbed panels.
  *
- * @param string $hook_suffix The current admin page hook suffix.
- * @return void
- */
-function serverinfo_scripts_admin( $hook_suffix ) {
-	$serverinfo_admin_pages = array( 'dashboard_page_wp-serverinfo' );
-	if ( in_array( $hook_suffix, $serverinfo_admin_pages, true ) ) {
-		$script = <<<'JS'
-function serverinfo_toggle(id) {
-	var sections = ['GeneralOverview', 'PHPinfo', 'MYSQLinfo', 'memcachedinfo'];
-	for (var i = 0; i < sections.length; i++) {
-		var el = document.getElementById(sections[i]);
-		if (el) {
-			el.style.display = (sections[i] === id) ? '' : 'none';
-		}
-	}
-}
-document.addEventListener('DOMContentLoaded', function () {
-	document.addEventListener('click', function (e) {
-		var link = e.target.closest('.serverinfo-nav');
-		if (link) {
-			e.preventDefault();
-			serverinfo_toggle(link.getAttribute('data-target'));
-		}
-	});
-});
-JS;
-		wp_register_script( 'wp-serverinfo', false, array(), WP_SERVERINFO_VERSION, true );
-		wp_enqueue_script( 'wp-serverinfo' );
-		wp_add_inline_script( 'wp-serverinfo', $script );
-	}
-}
-
-
-/**
- * Render the WP-ServerInfo admin page (all four panels).
+ * The active panel is chosen via the `tab` query argument; memcached and Redis
+ * tabs appear only when their PHP extension is available.
  *
  * @return void
  */
 function display_serverinfo() {
-	echo '<style type="text/css">#GeneralOverview .widefat tbody tr:hover td, #PHPinfo .widefat tbody tr:hover td, #MYSQLinfo .widefat tbody tr:hover td, #memcachedinfo .widefat tbody tr:hover td { background-color: #f6f7f7; }</style>' . "\n";
-	get_generalinfo();
-	get_phpinfo();
-	get_mysqlinfo();
-	get_memcachedinfo();
+	$tabs = array(
+		'general' => __( 'General', 'wp-serverinfo' ),
+		'php'     => __( 'PHP', 'wp-serverinfo' ),
+		'mysql'   => __( 'MySQL', 'wp-serverinfo' ),
+	);
+	if ( serverinfo_has_memcached() ) {
+		$tabs['memcached'] = __( 'memcached', 'wp-serverinfo' );
+	}
+	if ( serverinfo_has_redis() ) {
+		$tabs['redis'] = __( 'Redis', 'wp-serverinfo' );
+	}
+
+	// Read-only tab selection driven by the URL; no state change, so no nonce is needed.
+	$active = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
+	if ( ! isset( $tabs[ $active ] ) ) {
+		$active = 'general';
+	}
+
+	echo '<style type="text/css">.wrap .widefat tbody tr:hover td { background-color: #f6f7f7; }</style>' . "\n";
+	echo '<div class="wrap">' . "\n";
+	echo '<h1>' . esc_html__( 'WP-ServerInfo', 'wp-serverinfo' ) . '</h1>' . "\n";
+
+	echo '<h2 class="nav-tab-wrapper">';
+	foreach ( $tabs as $tab => $label ) {
+		$url = add_query_arg(
+			array(
+				'page' => 'wp-serverinfo',
+				'tab'  => $tab,
+			),
+			admin_url( 'index.php' )
+		);
+		printf(
+			'<a href="%s" class="nav-tab%s">%s</a>',
+			esc_url( $url ),
+			$active === $tab ? ' nav-tab-active' : '',
+			esc_html( $label )
+		);
+	}
+	echo '</h2>' . "\n";
+
+	switch ( $active ) {
+		case 'php':
+			get_phpinfo();
+			break;
+		case 'mysql':
+			get_mysqlinfo();
+			break;
+		case 'memcached':
+			get_memcachedinfo();
+			break;
+		case 'redis':
+			get_redisinfo();
+			break;
+		default:
+			get_generalinfo();
+			break;
+	}
+
+	echo '</div>' . "\n";
 }
 
 
@@ -135,10 +155,8 @@ function get_generalinfo() {
 		<?php
 	endif;
 	?>
-	<div class="wrap" id="GeneralOverview">
+	<div id="GeneralOverview">
 		<h2><?php esc_html_e( 'General Overview', 'wp-serverinfo' ); ?></h2>
-		<?php serverinfo_subnavi(); ?>
-		<br class="clear" />
 		<table class="widefat">
 			<thead>
 				<tr>
@@ -222,9 +240,8 @@ function get_generalinfo() {
  * @return void
  */
 function get_phpinfo() {
-	echo '<div class="wrap" id="PHPinfo" style="display: none;">' . "\n";
+	echo '<div id="PHPinfo">' . "\n";
 	echo '<h2>PHP ' . esc_html( phpversion() ) . '</h2>' . "\n";
-	serverinfo_subnavi();
 
 	// Summary built from structured PHP data (no phpinfo() HTML scraping).
 	$summary = array(
@@ -285,9 +302,8 @@ function get_mysqlinfo() {
 		</style>
 		<?php
 	endif;
-	echo '<div class="wrap" id="MYSQLinfo" style="display: none;">' . "\n";
+	echo '<div id="MYSQLinfo">' . "\n";
 	echo '<h2>MYSQL ' . esc_html( $sqlversion ) . "</h2>\n";
-	serverinfo_subnavi();
 	if ( $mysqlinfo ) {
 		echo '<br class="clear" />' . "\n";
 		echo '<table class="widefat" dir="ltr">' . "\n";
@@ -345,7 +361,7 @@ if ( ! function_exists( 'serverinfo_get_memcached_stats' ) ) {
  * @return void
  */
 function get_memcachedinfo() {
-	echo '<div class="wrap" id="memcachedinfo" style="display: none;">' . "\n";
+	echo '<div id="memcachedinfo">' . "\n";
 	if ( serverinfo_has_memcached() ) {
 		$memcachedinfo = serverinfo_get_memcached_stats();
 		if ( is_rtl() ) :
@@ -365,7 +381,6 @@ function get_memcachedinfo() {
 			<?php
 		endif;
 		echo '<h2>memcached ' . esc_html( $memcachedinfo['version'] ?? '' ) . "</h2>\n";
-		serverinfo_subnavi();
 		if ( $memcachedinfo ) {
 			$cache_hit  = ( $memcachedinfo['cmd_get'] > 0 ? ( ( $memcachedinfo['get_hits'] / $memcachedinfo['cmd_get'] ) * 100 ) : 0 );
 			$cache_hit  = round( $cache_hit, 2 );
@@ -421,26 +436,90 @@ function get_memcachedinfo() {
 }
 
 
+if ( ! function_exists( 'serverinfo_has_redis' ) ) {
+	/**
+	 * Determine whether the phpredis extension is available.
+	 *
+	 * @return bool True when the Redis class is loaded.
+	 */
+	function serverinfo_has_redis() {
+		return class_exists( 'Redis' );
+	}
+}
+
+
+if ( ! function_exists( 'serverinfo_get_redis_stats' ) ) {
+	/**
+	 * Fetch Redis server info from the local instance via phpredis.
+	 *
+	 * @return array|false Associative INFO array, or false when unavailable.
+	 */
+	function serverinfo_get_redis_stats() {
+		if ( ! class_exists( 'Redis' ) ) {
+			return false;
+		}
+		try {
+			$redis = new Redis();
+			// Short timeout so an unreachable server does not stall the admin page.
+			if ( ! $redis->connect( '127.0.0.1', 6379, 1 ) ) {
+				return false;
+			}
+			$info = $redis->info();
+			$redis->close();
+		} catch ( Exception $e ) {
+			return false;
+		}
+		return is_array( $info ) && ! empty( $info ) ? $info : false;
+	}
+}
+
+
 /**
- * Build (and optionally echo) the panel sub-navigation.
+ * Output the Redis Information panel.
  *
- * @param bool $display Whether to echo the markup (true) or return it (false).
- * @return void|string Markup when $display is false, otherwise void.
+ * @return void
  */
-function serverinfo_subnavi( $display = true ) {
-	$output  = '<p style="text-align: center">';
-	$output .= '<a href="#GeneralOverview" class="serverinfo-nav" data-target="GeneralOverview">' . esc_html__( 'Display General Overview', 'wp-serverinfo' ) . '</a>';
-	$output .= ' - <a href="#PHPinfo" class="serverinfo-nav" data-target="PHPinfo">' . esc_html__( 'Display PHP Information', 'wp-serverinfo' ) . '</a>';
-	$output .= ' - <a href="#MYSQLinfo" class="serverinfo-nav" data-target="MYSQLinfo">' . esc_html__( 'Display MYSQL Information', 'wp-serverinfo' ) . '</a>';
-	if ( serverinfo_has_memcached() ) {
-		$output .= ' - <a href="#memcachedinfo" class="serverinfo-nav" data-target="memcachedinfo">' . esc_html__( 'Display memcached Information', 'wp-serverinfo' ) . '</a>';
+function get_redisinfo() {
+	echo '<div id="Redisinfo">' . "\n";
+	if ( serverinfo_has_redis() ) {
+		$redisinfo = serverinfo_get_redis_stats();
+		echo '<h2>Redis ' . esc_html( $redisinfo['redis_version'] ?? '' ) . "</h2>\n";
+		if ( $redisinfo ) {
+			$hits    = isset( $redisinfo['keyspace_hits'] ) ? (int) $redisinfo['keyspace_hits'] : 0;
+			$misses  = isset( $redisinfo['keyspace_misses'] ) ? (int) $redisinfo['keyspace_misses'] : 0;
+			$lookups = $hits + $misses;
+			$hit_pct = $lookups > 0 ? round( ( $hits / $lookups ) * 100, 2 ) : 0;
+
+			echo '<br class="clear" />' . "\n";
+			echo '<table class="widefat" dir="ltr">' . "\n";
+			echo '<thead><tr><th>' . esc_html__( 'Variable Name', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Value', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Description', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
+
+			// Each row: variable name, pre-formatted value, and description; all three cells are escaped uniformly below.
+			$redis_rows = array(
+				array( 'redis_version', $redisinfo['redis_version'] ?? '', __( 'Redis server version', 'wp-serverinfo' ) ),
+				array( 'redis_mode', $redisinfo['redis_mode'] ?? '', __( 'Server mode (standalone, sentinel or cluster)', 'wp-serverinfo' ) ),
+				array( 'uptime_in_days', number_format_i18n( $redisinfo['uptime_in_days'] ?? 0 ), __( 'Number of days since the server was started', 'wp-serverinfo' ) ),
+				array( 'connected_clients', number_format_i18n( $redisinfo['connected_clients'] ?? 0 ), __( 'Number of client connections', 'wp-serverinfo' ) ),
+				array( 'used_memory', $redisinfo['used_memory_human'] ?? format_filesize( $redisinfo['used_memory'] ?? 0 ), __( 'Memory allocated by Redis', 'wp-serverinfo' ) ),
+				array( 'used_memory_peak', $redisinfo['used_memory_peak_human'] ?? format_filesize( $redisinfo['used_memory_peak'] ?? 0 ), __( 'Peak memory consumed by Redis', 'wp-serverinfo' ) ),
+				array( 'maxmemory', $redisinfo['maxmemory_human'] ?? format_filesize( $redisinfo['maxmemory'] ?? 0 ), __( 'Memory limit configured for Redis', 'wp-serverinfo' ) ),
+				array( 'maxmemory_policy', $redisinfo['maxmemory_policy'] ?? '', __( 'Eviction policy applied when the memory limit is reached', 'wp-serverinfo' ) ),
+				array( 'total_connections_received', number_format_i18n( $redisinfo['total_connections_received'] ?? 0 ), __( 'Total number of connections accepted by the server', 'wp-serverinfo' ) ),
+				array( 'total_commands_processed', number_format_i18n( $redisinfo['total_commands_processed'] ?? 0 ), __( 'Total number of commands processed by the server', 'wp-serverinfo' ) ),
+				array( 'instantaneous_ops_per_sec', number_format_i18n( $redisinfo['instantaneous_ops_per_sec'] ?? 0 ), __( 'Number of commands processed per second', 'wp-serverinfo' ) ),
+				array( 'keyspace_hits', number_format_i18n( $hits ) . ' (' . $hit_pct . '%)', __( 'Number of successful lookups of keys in the main dictionary', 'wp-serverinfo' ) ),
+				array( 'keyspace_misses', number_format_i18n( $misses ), __( 'Number of failed lookups of keys in the main dictionary', 'wp-serverinfo' ) ),
+				array( 'expired_keys', number_format_i18n( $redisinfo['expired_keys'] ?? 0 ), __( 'Total number of key expiration events', 'wp-serverinfo' ) ),
+				array( 'evicted_keys', number_format_i18n( $redisinfo['evicted_keys'] ?? 0 ), __( 'Number of evicted keys due to the memory limit', 'wp-serverinfo' ) ),
+				array( 'connected_slaves', number_format_i18n( $redisinfo['connected_slaves'] ?? 0 ), __( 'Number of connected replicas', 'wp-serverinfo' ) ),
+			);
+			foreach ( $redis_rows as $redis_row ) {
+				echo '<tr><td>' . esc_html( $redis_row[0] ) . '</td><td>' . esc_html( $redis_row[1] ) . '</td><td>' . esc_html( $redis_row[2] ) . '</td></tr>' . "\n";
+			}
+			echo '</tbody></table>' . "\n";
+		}
 	}
-	$output .= '</p>';
-	if ( $display ) {
-		echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static markup; dynamic labels escaped via esc_html__() above.
-	} else {
-		return $output;
-	}
+	echo '</div>' . "\n";
 }
 
 
