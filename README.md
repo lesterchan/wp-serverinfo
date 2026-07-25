@@ -1,6 +1,6 @@
 # WP-ServerInfo
 Contributors: GamerZ  
-Donate link: http://lesterchan.net/site/donation/  
+Donate link: https://lesterchan.net/site/donation/  
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache, redis  
 Requires at least: 4.0  
 Tested up to: 7.0  
