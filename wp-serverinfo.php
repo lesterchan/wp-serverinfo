@@ -57,7 +57,7 @@ function serverinfo_menu() {
 add_action( 'admin_enqueue_scripts', 'serverinfo_scripts_admin' );
 function serverinfo_scripts_admin( $hook_suffix ) {
 	$serverinfo_admin_pages = array( 'dashboard_page_wp-serverinfo' );
-	if ( in_array( $hook_suffix, $serverinfo_admin_pages ) ) {
+	if ( in_array( $hook_suffix, $serverinfo_admin_pages, true ) ) {
 		$script = <<<'JS'
 function serverinfo_toggle(id) {
 	var sections = ['GeneralOverview', 'PHPinfo', 'MYSQLinfo', 'memcachedinfo'];
@@ -135,7 +135,7 @@ function get_generalinfo() {
 				</tr>
 				<tr class="alternate">
 					<td><?php esc_html_e( 'Server', 'wp-serverinfo' ); ?></td>
-					<td><?php echo esc_html( $_SERVER['SERVER_SOFTWARE'] ?? '' ); ?></td>
+					<td><?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ?? '' ) ) ); ?></td>
 					<td><?php esc_html_e( 'Database Index Disk Usage', 'wp-serverinfo' ); ?></td>
 					<td><?php echo esc_html( format_filesize( get_mysql_index_usage() ) ); ?></td>
 				</tr>
@@ -159,25 +159,25 @@ function get_generalinfo() {
 				</tr>
 				<tr class="alternate">
 					<td><?php esc_html_e( 'Server Hostname', 'wp-serverinfo' ); ?></td>
-					<td><?php echo esc_html( $_SERVER['SERVER_NAME'] ?? '' ); ?></td>
+					<td><?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ?? '' ) ) ); ?></td>
 					<td><?php esc_html_e( 'PHP Short Tag', 'wp-serverinfo' ); ?></td>
 					<td><?php echo esc_html( get_php_short_tag() ); ?></td>
 				</tr>
 				<tr>
 					<td><?php esc_html_e( 'Server IP:Port', 'wp-serverinfo' ); ?></td>
-					<td><?php echo esc_html( $is_IIS ? ( $_SERVER['LOCAL_ADDR'] ?? '' ) : ( $_SERVER['SERVER_ADDR'] ?? '' ) ); ?>:<?php echo esc_html( $_SERVER['SERVER_PORT'] ?? '' ); ?></td>
+					<td><?php echo esc_html( sanitize_text_field( wp_unslash( $is_IIS ? ( $_SERVER['LOCAL_ADDR'] ?? '' ) : ( $_SERVER['SERVER_ADDR'] ?? '' ) ) ) ); ?>:<?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_PORT'] ?? '' ) ) ); ?></td>
 					<td><?php esc_html_e( 'PHP Max Script Execute Time', 'wp-serverinfo' ); ?></td>
 					<td><?php echo esc_html( get_php_max_execution() ); ?>s</td>
 				</tr>
 				<tr class="alternate">
 					<td><?php esc_html_e( 'Server Document Root', 'wp-serverinfo' ); ?></td>
-					<td><?php echo esc_html( $_SERVER['DOCUMENT_ROOT'] ?? '' ); ?></td>
+					<td><?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['DOCUMENT_ROOT'] ?? '' ) ) ); ?></td>
 					<td><?php esc_html_e( 'PHP Memory Limit', 'wp-serverinfo' ); ?></td>
 					<td><?php echo esc_html( format_php_size( get_php_memory_limit() ) ); ?></td>
 				</tr>
 				<tr>
 					<td><?php esc_html_e( 'Server Date/Time', 'wp-serverinfo' ); ?></td>
-					<td><?php echo esc_html( mysql2date( sprintf( __( '%1$s @ %2$s', 'wp-serverinfo' ), get_option( 'date_format' ), get_option( 'time_format' ) ), current_time( 'mysql' ) ) ); ?></td>
+					<td><?php echo esc_html( mysql2date( sprintf( /* translators: 1: date format, 2: time format */ __( '%1$s @ %2$s', 'wp-serverinfo' ), get_option( 'date_format' ), get_option( 'time_format' ) ), current_time( 'mysql' ) ) ); ?></td>
 					<td><?php esc_html_e( 'PHP Max Upload Size', 'wp-serverinfo' ); ?></td>
 					<td><?php echo esc_html( format_php_size( get_php_upload_max() ) ); ?></td>
 				</tr>
@@ -220,7 +220,7 @@ function get_phpinfo() {
 	if ( ! empty( $ini ) ) {
 		ksort( $ini );
 		echo '<br class="clear" />' . "\n";
-		echo '<table class="widefat"><thead><tr><th>' . __( 'Directive', 'wp-serverinfo' ) . '</th><th>' . __( 'Local Value', 'wp-serverinfo' ) . '</th><th>' . __( 'Master Value', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
+		echo '<table class="widefat"><thead><tr><th>' . esc_html__( 'Directive', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Local Value', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Master Value', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
 		foreach ( $ini as $directive => $values ) {
 			$local  = isset( $values['local_value'] ) ? $values['local_value'] : '';
 			$global = isset( $values['global_value'] ) ? $values['global_value'] : '';
@@ -235,8 +235,10 @@ function get_phpinfo() {
 // Get MYSQL Information
 function get_mysqlinfo() {
 	global $wpdb;
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
 	$sqlversion = $wpdb->get_var( 'SELECT VERSION() AS version' );
 	$mysqlinfo  = $wpdb->get_results( 'SHOW VARIABLES' );
+	// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	if ( is_rtl() ) :
 		?>
 		<style type="text/css">
@@ -259,8 +261,9 @@ function get_mysqlinfo() {
 	if ( $mysqlinfo ) {
 		echo '<br class="clear" />' . "\n";
 		echo '<table class="widefat" dir="ltr">' . "\n";
-		echo '<thead><tr><th>' . __( 'Variable Name', 'wp-serverinfo' ) . '</th><th>' . __( 'Value', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
+		echo '<thead><tr><th>' . esc_html__( 'Variable Name', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Value', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
 		foreach ( $mysqlinfo as $info ) {
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column names from SHOW VARIABLES.
 			echo '<tr><td>' . esc_html( $info->Variable_name ) . '</td><td>' . esc_html( $info->Value ) . '</td></tr>' . "\n";
 		}
 		echo '</tbody></table>' . "\n";
@@ -288,7 +291,7 @@ if ( ! function_exists( 'serverinfo_get_memcached_stats' ) ) {
 			return is_array( $stats ) && ! empty( $stats ) ? reset( $stats ) : false;
 		} elseif ( class_exists( 'Memcache' ) ) {
 			$memcached_obj = new Memcache();
-			@$memcached_obj->addServer( 'localhost', 11211 );
+			@$memcached_obj->addServer( 'localhost', 11211 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- addServer() can emit a connection warning when memcached is down; suppressed intentionally.
 			return $memcached_obj->getStats();
 		}
 		return false;
@@ -329,37 +332,44 @@ function get_memcachedinfo() {
 
 			echo '<br class="clear" />' . "\n";
 			echo '<table class="widefat" dir="ltr">' . "\n";
-			echo '<thead><tr><th>' . __( 'Variable Name', 'wp-serverinfo' ) . '</th><th>' . __( 'Value', 'wp-serverinfo' ) . '</th><th>' . __( 'Description', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
-			echo '<tr><td>pid</td><td>' . esc_html( $memcachedinfo['pid'] ) . '</td><td>' . __( 'Process ID', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>uptime</td><td>' . $uptime . '</td><td>' . __( 'Number of days since the process was started', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>version</td><td>' . esc_html( $memcachedinfo['version'] ) . '</td><td>' . __( 'memcached version', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>rusage_user</td><td>' . esc_html( $memcachedinfo['rusage_user'] ) . '</td><td>' . __( 'Seconds the cpu has devoted to the process as the user', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>rusage_system</td><td>' . esc_html( $memcachedinfo['rusage_system'] ) . '</td><td>' . __( 'Seconds the cpu has devoted to the process as the system', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>curr_items</td><td>' . number_format_i18n( $memcachedinfo['curr_items'] ) . '</td><td>' . __( 'Total number of items currently in memcached', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>total_items</td><td>' . number_format_i18n( $memcachedinfo['total_items'] ) . '</td><td>' . __( 'Total number of items that have passed through memcached', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>bytes</td><td>' . format_filesize( $memcachedinfo['bytes'] ) . ' (' . $usage . '%)</td><td>' . __( 'Memory size currently used by curr_items', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>limit_maxbytes</td><td>' . format_filesize( $memcachedinfo['limit_maxbytes'] ) . '</td><td>' . __( 'Maximum memory size allocated to memcached', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>curr_connections</td><td>' . number_format_i18n( $memcachedinfo['curr_connections'] ) . '</td><td>' . __( 'Total number of open connections to memcached', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>total_connections</td><td>' . number_format_i18n( $memcachedinfo['total_connections'] ) . '</td><td>' . __( 'Total number of connections opened since memcached started running', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>connection_structures</td><td>' . number_format_i18n( $memcachedinfo['connection_structures'] ) . '</td><td>' . __( 'Number of connection structures allocated by the server', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>cmd_get</td><td>' . number_format_i18n( $memcachedinfo['cmd_get'] ) . '</td><td>' . __( 'Total GET commands issued to the server', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>cmd_set</td><td>' . number_format_i18n( $memcachedinfo['cmd_set'] ) . '</td><td>' . __( 'Total SET commands issued to the server', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>cmd_flush</td><td>' . number_format_i18n( $memcachedinfo['cmd_flush'] ) . '</td><td>' . __( 'Total FLUSH commands issued to the server', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>get_hits</td><td>' . number_format_i18n( $memcachedinfo['get_hits'] ) . ' (' . $cache_hit . '%)</td><td>' . __( 'Total number of times a GET command was able to retrieve and return data', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>get_misses</td><td>' . number_format_i18n( $memcachedinfo['get_misses'] ) . ' (' . $cache_miss . '%)</td><td>' . __( 'Total number of times a GET command was unable to retrieve and return data', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>delete_hits</td><td>' . number_format_i18n( $memcachedinfo['delete_hits'] ) . '</td><td>' . __( 'Total number of times a DELETE command was able to delete data', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>delete_misses</td><td>' . number_format_i18n( $memcachedinfo['delete_misses'] ) . '</td><td>' . __( 'Total number of times a DELETE command was unable to delete data', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>incr_hits</td><td>' . number_format_i18n( $memcachedinfo['incr_hits'] ) . '</td><td>' . __( 'Total number of times a INCR command was able to increment a value', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>incr_misses</td><td>' . number_format_i18n( $memcachedinfo['incr_misses'] ) . '</td><td>' . __( 'Total number of times a INCR command was unable to increment a value', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>decr_hits</td><td>' . number_format_i18n( $memcachedinfo['decr_hits'] ) . '</td><td>' . __( 'Total number of times a DECR command was able to decrement a value', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>decr_misses</td><td>' . number_format_i18n( $memcachedinfo['decr_misses'] ) . '</td><td>' . __( 'Total number of times a DECR command was unable to decrement a value', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>cas_hits</td><td>' . number_format_i18n( $memcachedinfo['cas_hits'] ) . '</td><td>' . __( 'Total number of times a CAS command was able to compare and swap data', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>cas_misses</td><td>' . number_format_i18n( $memcachedinfo['cas_misses'] ) . '</td><td>' . __( 'Total number of times a CAS command was unable to compare and swap data', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>cas_badval</td><td>' . number_format_i18n( $memcachedinfo['cas_badval'] ) . '</td><td>' . __( 'N/A', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>bytes_read</td><td>' . format_filesize( $memcachedinfo['bytes_read'] ) . '</td><td>' . __( 'Total number of bytes input into the server', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>bytes_written</td><td>' . format_filesize( $memcachedinfo['bytes_written'] ) . '</td><td>' . __( 'Total number of bytes written by the server', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>evictions</td><td>' . number_format_i18n( $memcachedinfo['evictions'] ) . '</td><td>' . __( 'Number of valid items removed from cache to free memory for new items', 'wp-serverinfo' ) . '</td></tr>' . "\n";
-			echo '<tr><td>reclaimed</td><td>' . number_format_i18n( $memcachedinfo['reclaimed'] ) . '</td><td>' . __( 'Number of items reclaimed', 'wp-serverinfo' ) . '</td></tr>' . "\n";
+			echo '<thead><tr><th>' . esc_html__( 'Variable Name', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Value', 'wp-serverinfo' ) . '</th><th>' . esc_html__( 'Description', 'wp-serverinfo' ) . '</th></tr></thead><tbody>' . "\n";
+
+			// Each row: variable name, pre-formatted value, description. All three cells are escaped uniformly below.
+			$memcached_rows = array(
+				array( 'pid', $memcachedinfo['pid'], __( 'Process ID', 'wp-serverinfo' ) ),
+				array( 'uptime', $uptime, __( 'Number of days since the process was started', 'wp-serverinfo' ) ),
+				array( 'version', $memcachedinfo['version'], __( 'memcached version', 'wp-serverinfo' ) ),
+				array( 'rusage_user', $memcachedinfo['rusage_user'], __( 'Seconds the cpu has devoted to the process as the user', 'wp-serverinfo' ) ),
+				array( 'rusage_system', $memcachedinfo['rusage_system'], __( 'Seconds the cpu has devoted to the process as the system', 'wp-serverinfo' ) ),
+				array( 'curr_items', number_format_i18n( $memcachedinfo['curr_items'] ), __( 'Total number of items currently in memcached', 'wp-serverinfo' ) ),
+				array( 'total_items', number_format_i18n( $memcachedinfo['total_items'] ), __( 'Total number of items that have passed through memcached', 'wp-serverinfo' ) ),
+				array( 'bytes', format_filesize( $memcachedinfo['bytes'] ) . ' (' . $usage . '%)', __( 'Memory size currently used by curr_items', 'wp-serverinfo' ) ),
+				array( 'limit_maxbytes', format_filesize( $memcachedinfo['limit_maxbytes'] ), __( 'Maximum memory size allocated to memcached', 'wp-serverinfo' ) ),
+				array( 'curr_connections', number_format_i18n( $memcachedinfo['curr_connections'] ), __( 'Total number of open connections to memcached', 'wp-serverinfo' ) ),
+				array( 'total_connections', number_format_i18n( $memcachedinfo['total_connections'] ), __( 'Total number of connections opened since memcached started running', 'wp-serverinfo' ) ),
+				array( 'connection_structures', number_format_i18n( $memcachedinfo['connection_structures'] ), __( 'Number of connection structures allocated by the server', 'wp-serverinfo' ) ),
+				array( 'cmd_get', number_format_i18n( $memcachedinfo['cmd_get'] ), __( 'Total GET commands issued to the server', 'wp-serverinfo' ) ),
+				array( 'cmd_set', number_format_i18n( $memcachedinfo['cmd_set'] ), __( 'Total SET commands issued to the server', 'wp-serverinfo' ) ),
+				array( 'cmd_flush', number_format_i18n( $memcachedinfo['cmd_flush'] ), __( 'Total FLUSH commands issued to the server', 'wp-serverinfo' ) ),
+				array( 'get_hits', number_format_i18n( $memcachedinfo['get_hits'] ) . ' (' . $cache_hit . '%)', __( 'Total number of times a GET command was able to retrieve and return data', 'wp-serverinfo' ) ),
+				array( 'get_misses', number_format_i18n( $memcachedinfo['get_misses'] ) . ' (' . $cache_miss . '%)', __( 'Total number of times a GET command was unable to retrieve and return data', 'wp-serverinfo' ) ),
+				array( 'delete_hits', number_format_i18n( $memcachedinfo['delete_hits'] ), __( 'Total number of times a DELETE command was able to delete data', 'wp-serverinfo' ) ),
+				array( 'delete_misses', number_format_i18n( $memcachedinfo['delete_misses'] ), __( 'Total number of times a DELETE command was unable to delete data', 'wp-serverinfo' ) ),
+				array( 'incr_hits', number_format_i18n( $memcachedinfo['incr_hits'] ), __( 'Total number of times a INCR command was able to increment a value', 'wp-serverinfo' ) ),
+				array( 'incr_misses', number_format_i18n( $memcachedinfo['incr_misses'] ), __( 'Total number of times a INCR command was unable to increment a value', 'wp-serverinfo' ) ),
+				array( 'decr_hits', number_format_i18n( $memcachedinfo['decr_hits'] ), __( 'Total number of times a DECR command was able to decrement a value', 'wp-serverinfo' ) ),
+				array( 'decr_misses', number_format_i18n( $memcachedinfo['decr_misses'] ), __( 'Total number of times a DECR command was unable to decrement a value', 'wp-serverinfo' ) ),
+				array( 'cas_hits', number_format_i18n( $memcachedinfo['cas_hits'] ), __( 'Total number of times a CAS command was able to compare and swap data', 'wp-serverinfo' ) ),
+				array( 'cas_misses', number_format_i18n( $memcachedinfo['cas_misses'] ), __( 'Total number of times a CAS command was unable to compare and swap data', 'wp-serverinfo' ) ),
+				array( 'cas_badval', number_format_i18n( $memcachedinfo['cas_badval'] ), __( 'N/A', 'wp-serverinfo' ) ),
+				array( 'bytes_read', format_filesize( $memcachedinfo['bytes_read'] ), __( 'Total number of bytes input into the server', 'wp-serverinfo' ) ),
+				array( 'bytes_written', format_filesize( $memcachedinfo['bytes_written'] ), __( 'Total number of bytes written by the server', 'wp-serverinfo' ) ),
+				array( 'evictions', number_format_i18n( $memcachedinfo['evictions'] ), __( 'Number of valid items removed from cache to free memory for new items', 'wp-serverinfo' ) ),
+				array( 'reclaimed', number_format_i18n( $memcachedinfo['reclaimed'] ), __( 'Number of items reclaimed', 'wp-serverinfo' ) ),
+			);
+			foreach ( $memcached_rows as $memcached_row ) {
+				echo '<tr><td>' . esc_html( $memcached_row[0] ) . '</td><td>' . esc_html( $memcached_row[1] ) . '</td><td>' . esc_html( $memcached_row[2] ) . '</td></tr>' . "\n";
+			}
 			echo '</tbody></table>' . "\n";
 		}
 	}
@@ -370,15 +380,15 @@ function get_memcachedinfo() {
 // WP-Server Sub Navigation
 function serverinfo_subnavi( $display = true ) {
 	$output  = '<p style="text-align: center">';
-	$output .= '<a href="#GeneralOverview" class="serverinfo-nav" data-target="GeneralOverview">' . __( 'Display General Overview', 'wp-serverinfo' ) . '</a>';
-	$output .= ' - <a href="#PHPinfo" class="serverinfo-nav" data-target="PHPinfo">' . __( 'Display PHP Information', 'wp-serverinfo' ) . '</a>';
-	$output .= ' - <a href="#MYSQLinfo" class="serverinfo-nav" data-target="MYSQLinfo">' . __( 'Display MYSQL Information', 'wp-serverinfo' ) . '</a>';
+	$output .= '<a href="#GeneralOverview" class="serverinfo-nav" data-target="GeneralOverview">' . esc_html__( 'Display General Overview', 'wp-serverinfo' ) . '</a>';
+	$output .= ' - <a href="#PHPinfo" class="serverinfo-nav" data-target="PHPinfo">' . esc_html__( 'Display PHP Information', 'wp-serverinfo' ) . '</a>';
+	$output .= ' - <a href="#MYSQLinfo" class="serverinfo-nav" data-target="MYSQLinfo">' . esc_html__( 'Display MYSQL Information', 'wp-serverinfo' ) . '</a>';
 	if ( serverinfo_has_memcached() ) {
-		$output .= ' - <a href="#memcachedinfo" class="serverinfo-nav" data-target="memcachedinfo">' . __( 'Display memcached Information', 'wp-serverinfo' ) . '</a>';
+		$output .= ' - <a href="#memcachedinfo" class="serverinfo-nav" data-target="memcachedinfo">' . esc_html__( 'Display memcached Information', 'wp-serverinfo' ) . '</a>';
 	}
 	$output .= '</p>';
 	if ( $display ) {
-		echo $output;
+		echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static markup; dynamic labels escaped via esc_html__() above.
 	} else {
 		return $output;
 	}
@@ -387,17 +397,17 @@ function serverinfo_subnavi( $display = true ) {
 
 // Function: Format Bytes Into TiB/GiB/MiB/KiB/Bytes
 if ( ! function_exists( 'format_filesize' ) ) {
-	function format_filesize( $rawSize ) {
-		if ( $rawSize / 1099511627776 > 1 ) {
-			return number_format_i18n( $rawSize / 1099511627776, 1 ) . ' ' . __( 'TiB', 'wp-serverinfo' );
-		} elseif ( $rawSize / 1073741824 > 1 ) {
-			return number_format_i18n( $rawSize / 1073741824, 1 ) . ' ' . __( 'GiB', 'wp-serverinfo' );
-		} elseif ( $rawSize / 1048576 > 1 ) {
-			return number_format_i18n( $rawSize / 1048576, 1 ) . ' ' . __( 'MiB', 'wp-serverinfo' );
-		} elseif ( $rawSize / 1024 > 1 ) {
-			return number_format_i18n( $rawSize / 1024, 1 ) . ' ' . __( 'KiB', 'wp-serverinfo' );
-		} elseif ( $rawSize > 1 ) {
-			return number_format_i18n( $rawSize, 0 ) . ' ' . __( 'bytes', 'wp-serverinfo' );
+	function format_filesize( $raw_size ) {
+		if ( $raw_size / 1099511627776 > 1 ) {
+			return number_format_i18n( $raw_size / 1099511627776, 1 ) . ' ' . __( 'TiB', 'wp-serverinfo' );
+		} elseif ( $raw_size / 1073741824 > 1 ) {
+			return number_format_i18n( $raw_size / 1073741824, 1 ) . ' ' . __( 'GiB', 'wp-serverinfo' );
+		} elseif ( $raw_size / 1048576 > 1 ) {
+			return number_format_i18n( $raw_size / 1048576, 1 ) . ' ' . __( 'MiB', 'wp-serverinfo' );
+		} elseif ( $raw_size / 1024 > 1 ) {
+			return number_format_i18n( $raw_size / 1024, 1 ) . ' ' . __( 'KiB', 'wp-serverinfo' );
+		} elseif ( $raw_size > 1 ) {
+			return number_format_i18n( $raw_size, 0 ) . ' ' . __( 'bytes', 'wp-serverinfo' );
 		} else {
 			return __( 'unknown', 'wp-serverinfo' );
 		}
@@ -487,6 +497,7 @@ if ( ! function_exists( 'get_php_memory_limit' ) ) {
 if ( ! function_exists( 'get_mysql_version' ) ) {
 	function get_mysql_version() {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
 		return $wpdb->get_var( 'SELECT VERSION() AS version' );
 	}
 }
@@ -498,6 +509,7 @@ if ( ! function_exists( 'serverinfo_get_table_status' ) ) {
 		global $wpdb;
 		static $tablesstatus = null;
 		if ( is_null( $tablesstatus ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection, cached in a static for the request.
 			$tablesstatus = $wpdb->get_results( 'SHOW TABLE STATUS' );
 		}
 		return $tablesstatus;
@@ -510,7 +522,7 @@ if ( ! function_exists( 'get_mysql_data_usage' ) ) {
 	function get_mysql_data_usage() {
 		$data_usage = 0;
 		foreach ( serverinfo_get_table_status() as $tablestatus ) {
-			$data_usage += $tablestatus->Data_length;
+			$data_usage += $tablestatus->Data_length; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW TABLE STATUS.
 		}
 
 		return $data_usage;
@@ -523,7 +535,7 @@ if ( ! function_exists( 'get_mysql_index_usage' ) ) {
 	function get_mysql_index_usage() {
 		$index_usage = 0;
 		foreach ( serverinfo_get_table_status() as $tablestatus ) {
-			$index_usage += $tablestatus->Index_length;
+			$index_usage += $tablestatus->Index_length; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW TABLE STATUS.
 		}
 
 		return $index_usage;
@@ -535,9 +547,10 @@ if ( ! function_exists( 'get_mysql_index_usage' ) ) {
 if ( ! function_exists( 'get_mysql_max_allowed_packet' ) ) {
 	function get_mysql_max_allowed_packet() {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
 		$packet_max_query = $wpdb->get_row( "SHOW VARIABLES LIKE 'max_allowed_packet'" );
 
-		return $packet_max_query->Value;
+		return $packet_max_query->Value; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW VARIABLES.
 	}
 }
 
@@ -546,9 +559,10 @@ if ( ! function_exists( 'get_mysql_max_allowed_packet' ) ) {
 if ( ! function_exists( 'get_mysql_max_allowed_connections' ) ) {
 	function get_mysql_max_allowed_connections() {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
 		$connection_max_query = $wpdb->get_row( "SHOW VARIABLES LIKE 'max_connections'" );
 
-		return $connection_max_query->Value;
+		return $connection_max_query->Value; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW VARIABLES.
 	}
 }
 
@@ -556,9 +570,10 @@ if ( ! function_exists( 'get_mysql_max_allowed_connections' ) ) {
 if ( ! function_exists( 'get_mysql_query_cache_size' ) ) {
 	function get_mysql_query_cache_size() {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
 		$query_cache_size_query = $wpdb->get_row( "SHOW VARIABLES LIKE 'query_cache_size'" );
 
-		return $query_cache_size_query ? $query_cache_size_query->Value : 0;
+		return $query_cache_size_query ? $query_cache_size_query->Value : 0; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW VARIABLES.
 	}
 }
 
@@ -570,6 +585,7 @@ if ( ! function_exists( 'get_gd_version' ) ) {
 			$gd = gd_info();
 			$gd = $gd['GD Version'];
 		} else {
+			// phpcs:disable WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_phpinfo, WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- last-resort GD version probe when gd_info() is unavailable; output is parsed, not displayed.
 			ob_start();
 			phpinfo( 8 );
 			$phpinfo = ob_get_contents();
@@ -578,6 +594,7 @@ if ( ! function_exists( 'get_gd_version' ) ) {
 			$phpinfo = stristr( $phpinfo, 'gd version' );
 			$phpinfo = stristr( $phpinfo, 'version' );
 			$gd      = substr( $phpinfo, 0, strpos( $phpinfo, "\n" ) );
+			// phpcs:enable WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_phpinfo, WordPress.WP.AlternativeFunctions.strip_tags_strip_tags
 		}
 		if ( empty( $gd ) ) {
 			$gd = __( 'N/A', 'wp-serverinfo' );
@@ -591,9 +608,11 @@ if ( ! function_exists( 'get_gd_version' ) ) {
 if ( ! function_exists( 'get_serverload' ) ) {
 	function get_serverload() {
 		$server_load = '';
-		if ( PHP_OS != 'WINNT' && PHP_OS != 'WIN32' ) {
+		// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions, WordPress.PHP.DiscouragedPHPFunctions -- probing the host for load average; @-suppression and low-level/shell calls are intentional and gated behind availability and disable_functions checks.
+		if ( PHP_OS !== 'WINNT' && PHP_OS !== 'WIN32' ) {
 			if ( @file_exists( '/proc/loadavg' ) ) {
-				if ( $fh = @fopen( '/proc/loadavg', 'r' ) ) {
+				$fh = @fopen( '/proc/loadavg', 'r' );
+				if ( $fh ) {
 					$data = @fread( $fh, 6 );
 					@fclose( $fh );
 					$load_avg    = explode( ' ', $data );
@@ -601,24 +620,24 @@ if ( ! function_exists( 'get_serverload' ) ) {
 				}
 			} else {
 				$disabled_functions = array_map( 'trim', explode( ',', ini_get( 'disable_functions' ) ) );
-				if ( function_exists( 'system' ) && ! in_array( 'system', $disabled_functions ) ) {
+				if ( function_exists( 'system' ) && ! in_array( 'system', $disabled_functions, true ) ) {
 					$data = @system( 'uptime' );
-					if ( $data !== false ) {
+					if ( false !== $data ) {
 						preg_match( '/(.*):{1}(.*)/', $data, $matches );
 						if ( isset( $matches[2] ) ) {
 							$load_arr    = explode( ',', $matches[2] );
 							$server_load = trim( $load_arr[0] );
 						}
 					}
-				} elseif ( function_exists( 'exec' ) && ! in_array( 'exec', $disabled_functions ) ) {
+				} elseif ( function_exists( 'exec' ) && ! in_array( 'exec', $disabled_functions, true ) ) {
 					$data = @exec( 'uptime 2>&1', $output, $return_var );
-					if ( $return_var === 0 && ! empty( $data ) ) {
+					if ( 0 === $return_var && ! empty( $data ) ) {
 						preg_match( '/load average[s]?:\s*([0-9\.]+)/', $data, $matches );
 						if ( isset( $matches[1] ) ) {
 							$server_load = $matches[1];
 						}
 					}
-				} elseif ( function_exists( 'shell_exec' ) && ! in_array( 'shell_exec', $disabled_functions ) ) {
+				} elseif ( function_exists( 'shell_exec' ) && ! in_array( 'shell_exec', $disabled_functions, true ) ) {
 					$data = @shell_exec( 'uptime 2>&1' );
 					if ( ! empty( $data ) ) {
 						preg_match( '/load average[s]?:\s*([0-9\.]+)/', $data, $matches );
@@ -629,6 +648,7 @@ if ( ! function_exists( 'get_serverload' ) ) {
 				}
 			}
 		}
+		// phpcs:enable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions, WordPress.PHP.DiscouragedPHPFunctions
 		if ( empty( $server_load ) ) {
 			$server_load = __( 'N/A', 'wp-serverinfo' );
 		}
@@ -654,31 +674,31 @@ function wp_dashboard_serverinfo() {
 	} else {
 		echo '<div id="wp-serverinfo">';
 	}
-	echo '<p><strong>' . __( 'General', 'wp-serverinfo' ) . '</strong></p>';
+	echo '<p><strong>' . esc_html__( 'General', 'wp-serverinfo' ) . '</strong></p>';
 	echo '<ul>';
-	echo '<li>' . __( 'OS', 'wp-serverinfo' ) . ': <strong>' . esc_html( PHP_OS ) . '</strong></li>';
-	echo '<li>' . __( 'Server', 'wp-serverinfo' ) . ': <strong>' . esc_html( $_SERVER['SERVER_SOFTWARE'] ?? '' ) . '</strong></li>';
-	echo '<li>' . __( 'Hostname', 'wp-serverinfo' ) . ': <strong>' . esc_html( $_SERVER['SERVER_NAME'] ?? '' ) . '</strong></li>';
-	echo '<li>' . __( 'IP:Port', 'wp-serverinfo' ) . ': <strong>' . esc_html( $_SERVER['SERVER_ADDR'] ?? '' ) . ':' . esc_html( $_SERVER['SERVER_PORT'] ?? '' ) . '</strong></li>';
-	echo '<li>' . __( 'Document Root', 'wp-serverinfo' ) . ': <strong>' . esc_html( $_SERVER['DOCUMENT_ROOT'] ?? '' ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'OS', 'wp-serverinfo' ) . ': <strong>' . esc_html( PHP_OS ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Server', 'wp-serverinfo' ) . ': <strong>' . esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ?? '' ) ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Hostname', 'wp-serverinfo' ) . ': <strong>' . esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ?? '' ) ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'IP:Port', 'wp-serverinfo' ) . ': <strong>' . esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ?? '' ) ) ) . ':' . esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_PORT'] ?? '' ) ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Document Root', 'wp-serverinfo' ) . ': <strong>' . esc_html( sanitize_text_field( wp_unslash( $_SERVER['DOCUMENT_ROOT'] ?? '' ) ) ) . '</strong></li>';
 	echo '</ul>';
 	echo '<p><strong>PHP</strong></p>';
 	echo '<ul>';
 	echo '<li>v<strong>' . esc_html( PHP_VERSION ) . '</strong></li>';
 	echo '<li>GD: <strong>' . esc_html( get_gd_version() ) . '</strong></li>';
-	echo '<li>' . __( 'Memory Limit', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_php_size( get_php_memory_limit() ) ) . '</strong></li>';
-	echo '<li>' . __( 'Max Script Execute Time', 'wp-serverinfo' ) . ': <strong>' . esc_html( get_php_max_execution() ) . 's</strong></li>';
-	echo '<li>' . __( 'Max Post Size', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_php_size( get_php_post_max() ) ) . '</strong></li>';
-	echo '<li>' . __( 'Max Upload Size', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_php_size( get_php_upload_max() ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Memory Limit', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_php_size( get_php_memory_limit() ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Max Script Execute Time', 'wp-serverinfo' ) . ': <strong>' . esc_html( get_php_max_execution() ) . 's</strong></li>';
+	echo '<li>' . esc_html__( 'Max Post Size', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_php_size( get_php_post_max() ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Max Upload Size', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_php_size( get_php_upload_max() ) ) . '</strong></li>';
 	echo '</ul>';
 	echo '<p><strong>MYSQL</strong></p>';
 	echo '<ul>';
 	echo '<li>v<strong>' . esc_html( get_mysql_version() ) . '</strong></li>';
-	echo '<li>' . __( 'Maximum No. Connections', 'wp-serverinfo' ) . ': <strong>' . esc_html( number_format_i18n( get_mysql_max_allowed_connections(), 0 ) ) . '</strong></li>';
-	echo '<li>' . __( 'Maximum Packet Size', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_max_allowed_packet() ) ) . '</strong></li>';
-	echo '<li>' . __( 'Data Disk Usage', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_data_usage() ) ) . '</strong></li>';
-	echo '<li>' . __( 'Index Disk Usage', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_index_usage() ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Maximum No. Connections', 'wp-serverinfo' ) . ': <strong>' . esc_html( number_format_i18n( get_mysql_max_allowed_connections(), 0 ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Maximum Packet Size', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_max_allowed_packet() ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Data Disk Usage', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_data_usage() ) ) . '</strong></li>';
+	echo '<li>' . esc_html__( 'Index Disk Usage', 'wp-serverinfo' ) . ': <strong>' . esc_html( format_filesize( get_mysql_index_usage() ) ) . '</strong></li>';
 	echo '</ul>';
-	echo '<p class="textright"><a href="' . esc_url( admin_url( 'index.php?page=wp-serverinfo' ) ) . '" class="button">' . __( 'View all', 'wp-serverinfo' ) . '</a></p>';
+	echo '<p class="textright"><a href="' . esc_url( admin_url( 'index.php?page=wp-serverinfo' ) ) . '" class="button">' . esc_html__( 'View all', 'wp-serverinfo' ) . '</a></p>';
 	echo '</div>';
 }
