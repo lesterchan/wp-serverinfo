@@ -3,15 +3,17 @@
 Plugin Name: WP-ServerInfo
 Plugin URI: https://lesterchan.net/portfolio/programming/php/
 Description: Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
-Version: 1.66
+Version: 1.66.1
 Author: Lester 'GaMerZ' Chan
 Author URI: https://lesterchan.net
 Text Domain: wp-serverinfo
+Requires at least: 4.0
+Requires PHP: 7.2
 */
 
 
 /*
-    Copyright 2020 Lester Chan  (email : lesterchan@gmail.com)
+    Copyright 2026 Lester Chan  (email : lesterchan@gmail.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,6 +31,12 @@ Text Domain: wp-serverinfo
 */
 
 
+### Prevent Direct Access
+defined( 'ABSPATH' ) || exit;
+
+### Version
+define( 'WP_SERVERINFO_VERSION', '1.66.1' );
+
 ### Create Text Domain For Translations
 add_action('init', 'serverinfo_textdomain');
 function serverinfo_textdomain() {
@@ -40,23 +48,46 @@ function serverinfo_textdomain() {
 add_action('admin_menu', 'serverinfo_menu');
 function serverinfo_menu() {
     if (function_exists('add_submenu_page')) {
-        add_submenu_page('index.php',  __('WP-ServerInfo', 'wp-serverinfo'),  __('WP-ServerInfo', 'wp-serverinfo'), 'add_users', 'wp-serverinfo/wp-serverinfo.php', 'display_serverinfo');
+        add_submenu_page('index.php',  __('WP-ServerInfo', 'wp-serverinfo'),  __('WP-ServerInfo', 'wp-serverinfo'), 'manage_options', 'wp-serverinfo', 'display_serverinfo');
     }
 }
 
 
-### Function: Enqueue ServerInfo JavaScripts In WP-Admin
+### Function: Enqueue ServerInfo JavaScript In WP-Admin
 add_action('admin_enqueue_scripts', 'serverinfo_scripts_admin');
 function serverinfo_scripts_admin($hook_suffix) {
-    $serverinfo_admin_pages = array('dashboard_page_wp-serverinfo/wp-serverinfo');
+    $serverinfo_admin_pages = array('dashboard_page_wp-serverinfo');
     if(in_array($hook_suffix, $serverinfo_admin_pages)) {
-        wp_enqueue_script('wp-serverinfo', plugins_url('wp-serverinfo/serverinfo-js.js'), array('jquery'), '1.60', true);
+        $script = <<<'JS'
+function serverinfo_toggle(id) {
+	var sections = ['GeneralOverview', 'PHPinfo', 'MYSQLinfo', 'memcachedinfo'];
+	for (var i = 0; i < sections.length; i++) {
+		var el = document.getElementById(sections[i]);
+		if (el) {
+			el.style.display = (sections[i] === id) ? '' : 'none';
+		}
+	}
+}
+document.addEventListener('DOMContentLoaded', function () {
+	document.addEventListener('click', function (e) {
+		var link = e.target.closest('.serverinfo-nav');
+		if (link) {
+			e.preventDefault();
+			serverinfo_toggle(link.getAttribute('data-target'));
+		}
+	});
+});
+JS;
+        wp_register_script('wp-serverinfo', false, array(), WP_SERVERINFO_VERSION, true);
+        wp_enqueue_script('wp-serverinfo');
+        wp_add_inline_script('wp-serverinfo', $script);
     }
 }
 
 
 ### Display WP-ServerInfo Admin Page
 function display_serverinfo() {
+    echo '<style type="text/css">#GeneralOverview .widefat tbody tr:hover td, #PHPinfo .widefat tbody tr:hover td, #MYSQLinfo .widefat tbody tr:hover td, #memcachedinfo .widefat tbody tr:hover td { background-color: #f6f7f7; }</style>'."\n";
     get_generalinfo();
     get_phpinfo();
     get_mysqlinfo();
@@ -82,78 +113,78 @@ function get_generalinfo() {
     <?php endif;
 ?>
     <div class="wrap" id="GeneralOverview">
-        <h2><?php _e('General Overview','wp-serverinfo'); ?></h2>
+        <h2><?php esc_html_e('General Overview','wp-serverinfo'); ?></h2>
         <?php serverinfo_subnavi(); ?>
         <br class="clear" />
         <table class="widefat">
             <thead>
                 <tr>
-                    <th><?php _e('Variable Name', 'wp-serverinfo'); ?></th>
-                    <th><?php _e('Value', 'wp-serverinfo'); ?></th>
-                    <th><?php _e('Variable Name', 'wp-serverinfo'); ?></th>
-                    <th><?php _e('Value', 'wp-serverinfo'); ?></th>
+                    <th><?php esc_html_e('Variable Name', 'wp-serverinfo'); ?></th>
+                    <th><?php esc_html_e('Value', 'wp-serverinfo'); ?></th>
+                    <th><?php esc_html_e('Variable Name', 'wp-serverinfo'); ?></th>
+                    <th><?php esc_html_e('Value', 'wp-serverinfo'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><?php _e('OS', 'wp-serverinfo'); ?></td>
-                    <td><?php echo PHP_OS; ?></td>
-                    <td><?php _e('Database Data Disk Usage', 'wp-serverinfo'); ?></td>
-                    <td><?php echo format_filesize(get_mysql_data_usage()); ?></td>
+                    <td><?php esc_html_e('OS', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(PHP_OS); ?></td>
+                    <td><?php esc_html_e('Database Data Disk Usage', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(format_filesize(get_mysql_data_usage())); ?></td>
                 </tr>
                 <tr class="alternate">
-                    <td><?php _e('Server', 'wp-serverinfo'); ?></td>
-                    <td><?php echo $_SERVER["SERVER_SOFTWARE"]; ?></td>
-                    <td><?php _e('Database Index Disk Usage', 'wp-serverinfo'); ?></td>
-                    <td><?php echo format_filesize(get_mysql_index_usage()); ?></td>
+                    <td><?php esc_html_e('Server', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html($_SERVER['SERVER_SOFTWARE'] ?? ''); ?></td>
+                    <td><?php esc_html_e('Database Index Disk Usage', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(format_filesize(get_mysql_index_usage())); ?></td>
                 </tr>
                 <tr>
                     <td>PHP</td>
-                    <td>v<?php echo PHP_VERSION; ?></td>
-                    <td><?php _e('MYSQL Maximum Packet Size', 'wp-serverinfo'); ?></td>
-                    <td><?php echo format_filesize(get_mysql_max_allowed_packet()); ?></td>
+                    <td>v<?php echo esc_html(PHP_VERSION); ?></td>
+                    <td><?php esc_html_e('MYSQL Maximum Packet Size', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(format_filesize(get_mysql_max_allowed_packet())); ?></td>
                 </tr>
                 <tr class="alternate">
                     <td>MYSQL</td>
-                    <td>v<?php echo get_mysql_version(); ?></td>
-                    <td><?php _e('MYSQL Maximum No. Connection', 'wp-serverinfo'); ?></td>
-                    <td><?php echo number_format_i18n(get_mysql_max_allowed_connections()); ?></td>
+                    <td>v<?php echo esc_html(get_mysql_version()); ?></td>
+                    <td><?php esc_html_e('MYSQL Maximum No. Connection', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(number_format_i18n(get_mysql_max_allowed_connections())); ?></td>
                 </tr>
                 <tr>
                     <td>GD</td>
-                    <td><?php echo get_gd_version(); ?></td>
-                    <td><?php _e( 'MYSQL Query Cache Size', 'wp-serverinfo' ); ?></td>
-                    <td><?php echo format_filesize( get_mysql_query_cache_size() ); ?></td>
+                    <td><?php echo esc_html(get_gd_version()); ?></td>
+                    <td><?php esc_html_e( 'MYSQL Query Cache Size', 'wp-serverinfo' ); ?></td>
+                    <td><?php echo esc_html(format_filesize( get_mysql_query_cache_size() )); ?></td>
                 </tr>
                 <tr class="alternate">
-                    <td><?php _e('Server Hostname', 'wp-serverinfo'); ?></td>
-                    <td><?php echo $_SERVER['SERVER_NAME']; ?></td>
-                    <td><?php _e('PHP Short Tag', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_php_short_tag(); ?></td>
+                    <td><?php esc_html_e('Server Hostname', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html($_SERVER['SERVER_NAME'] ?? ''); ?></td>
+                    <td><?php esc_html_e('PHP Short Tag', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(get_php_short_tag()); ?></td>
                 </tr>
                 <tr>
-                    <td><?php _e('Server IP:Port','wp-serverinfo'); ?></td>
-                    <td><?php echo ($is_IIS ? $_SERVER['LOCAL_ADDR'] : $_SERVER['SERVER_ADDR']); ?>:<?php echo $_SERVER['SERVER_PORT']; ?></td>
-                    <td><?php _e('PHP Max Script Execute Time', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_php_max_execution(); ?>s</td>
+                    <td><?php esc_html_e('Server IP:Port','wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html($is_IIS ? ($_SERVER['LOCAL_ADDR'] ?? '') : ($_SERVER['SERVER_ADDR'] ?? '')); ?>:<?php echo esc_html($_SERVER['SERVER_PORT'] ?? ''); ?></td>
+                    <td><?php esc_html_e('PHP Max Script Execute Time', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(get_php_max_execution()); ?>s</td>
                 </tr>
                 <tr class="alternate">
-                    <td><?php _e('Server Document Root','wp-serverinfo'); ?></td>
-                    <td><?php echo $_SERVER['DOCUMENT_ROOT']; ?></td>
-                    <td><?php _e('PHP Memory Limit', 'wp-serverinfo'); ?></td>
-                    <td><?php echo format_php_size(get_php_memory_limit()); ?></td>
+                    <td><?php esc_html_e('Server Document Root','wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html($_SERVER['DOCUMENT_ROOT'] ?? ''); ?></td>
+                    <td><?php esc_html_e('PHP Memory Limit', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(format_php_size(get_php_memory_limit())); ?></td>
                 </tr>
                 <tr>
-                    <td><?php _e('Server Date/Time', 'wp-serverinfo'); ?></td>
-                    <td><?php echo mysql2date(sprintf(__('%s @ %s', 'wp-postratings'), get_option('date_format'), get_option('time_format')), current_time('mysql')); ?></td>
-                    <td><?php _e('PHP Max Upload Size', 'wp-serverinfo'); ?></td>
-                    <td><?php echo format_php_size(get_php_upload_max()); ?></td>
+                    <td><?php esc_html_e('Server Date/Time', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(mysql2date(sprintf(__('%s @ %s', 'wp-serverinfo'), get_option('date_format'), get_option('time_format')), current_time('mysql'))); ?></td>
+                    <td><?php esc_html_e('PHP Max Upload Size', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(format_php_size(get_php_upload_max())); ?></td>
                 </tr>
                 <tr class="alternate">
-                    <td><?php _e('Server Load', 'wp-serverinfo'); ?></td>
-                    <td><?php echo get_serverLoad(); ?></td>
-                    <td><?php _e('PHP Max Post Size', 'wp-serverinfo'); ?></td>
-                    <td><?php echo format_php_size(get_php_post_max()); ?></td>
+                    <td><?php esc_html_e('Server Load', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(get_serverLoad()); ?></td>
+                    <td><?php esc_html_e('PHP Max Post Size', 'wp-serverinfo'); ?></td>
+                    <td><?php echo esc_html(format_php_size(get_php_post_max())); ?></td>
                 </tr>
             </tbody>
         </table>
@@ -164,41 +195,39 @@ function get_generalinfo() {
 
 ### Get PHP Information
 function get_phpinfo() {
-    if( ! class_exists( 'DOMDocument' ) ) {
-        echo '<div class="wrap" id="PHPinfo" style="display: none;">';
-        echo '<h2>PHP ' . phpversion() . '</h2>';
-        serverinfo_subnavi();
-        echo 'You need <a href="http://php.net/manual/en/class.domdocument.php" target="_blank">DOMDocument extension</a> to be enabled.';
-        echo '</div>';
-    } else {
-        ob_start();
-        phpinfo();
-        $phpinfo = ob_get_contents();
-        ob_end_clean();
+    echo '<div class="wrap" id="PHPinfo" style="display: none;">'."\n";
+    echo '<h2>PHP '.esc_html(phpversion()).'</h2>'."\n";
+    serverinfo_subnavi();
 
-        // Use DOMDocument to parse phpinfo()
-        $html = new DOMDocument( '1.0', 'UTF-8' );
-        $html->loadHTML( $phpinfo );
-
-        // Style process
-        $tables = $html->getElementsByTagName( 'table' );
-        foreach( $tables as $table ) {
-            $table->setAttribute( 'class', 'widefat' );
-        }
-
-        // We only need the <body>
-        $xpath = new DOMXPath($html);
-        $body = $xpath->query('/html/body');
-
-        // Save HTML fragment
-        $phpinfo_html = $html->saveXml( $body->item( 0 ) );
-
-        echo '<div class="wrap" id="PHPinfo" style="display: none;">';
-        echo '<h2>PHP ' . phpversion() . '</h2>';
-        serverinfo_subnavi();
-        echo $phpinfo_html;
-        echo '</div>';
+    // Summary built from structured PHP data (no phpinfo() HTML scraping)
+    $summary = array(
+        __('PHP Version', 'wp-serverinfo')               => phpversion(),
+        __('Zend Engine Version', 'wp-serverinfo')       => zend_version(),
+        __('Server API', 'wp-serverinfo')                => php_sapi_name(),
+        __('Loaded Configuration File', 'wp-serverinfo') => php_ini_loaded_file() ? php_ini_loaded_file() : __('N/A', 'wp-serverinfo'),
+        __('Loaded Extensions', 'wp-serverinfo')         => implode(', ', get_loaded_extensions()),
+    );
+    echo '<br class="clear" />'."\n";
+    echo '<table class="widefat"><tbody>'."\n";
+    foreach($summary as $label => $value) {
+        echo '<tr><td><strong>'.esc_html($label).'</strong></td><td>'.esc_html($value).'</td></tr>'."\n";
     }
+    echo '</tbody></table>'."\n";
+
+    // Configuration directives from ini_get_all()
+    $ini = function_exists('ini_get_all') ? ini_get_all(null, true) : false;
+    if(!empty($ini)) {
+        ksort($ini);
+        echo '<br class="clear" />'."\n";
+        echo '<table class="widefat"><thead><tr><th>'.__('Directive', 'wp-serverinfo').'</th><th>'.__('Local Value', 'wp-serverinfo').'</th><th>'.__('Master Value', 'wp-serverinfo').'</th></tr></thead><tbody>'."\n";
+        foreach($ini as $directive => $values) {
+            $local  = isset($values['local_value'])  ? $values['local_value']  : '';
+            $global = isset($values['global_value']) ? $values['global_value'] : '';
+            echo '<tr><td>'.esc_html($directive).'</td><td>'.esc_html($local).'</td><td>'.esc_html($global).'</td></tr>'."\n";
+        }
+        echo '</tbody></table>'."\n";
+    }
+    echo '</div>'."\n";
 }
 
 
@@ -222,14 +251,14 @@ function get_mysqlinfo() {
         </style>
     <?php endif;
     echo '<div class="wrap" id="MYSQLinfo" style="display: none;">'."\n";
-    echo "<h2>MYSQL $sqlversion</h2>\n";
+    echo '<h2>MYSQL '.esc_html($sqlversion)."</h2>\n";
     serverinfo_subnavi();
     if($mysqlinfo) {
         echo '<br class="clear" />'."\n";
         echo '<table class="widefat" dir="ltr">'."\n";
         echo '<thead><tr><th>'.__('Variable Name', 'wp-serverinfo').'</th><th>'.__('Value', 'wp-serverinfo').'</th></tr></thead><tbody>'."\n";
         foreach($mysqlinfo as $info) {
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>'.$info->Variable_name.'</td><td>'.htmlspecialchars($info->Value).'</td></tr>'."\n";
+            echo '<tr><td>'.esc_html($info->Variable_name).'</td><td>'.esc_html($info->Value).'</td></tr>'."\n";
         }
         echo '</tbody></table>'."\n";
     }
@@ -237,13 +266,38 @@ function get_mysqlinfo() {
 }
 
 
+### Function: Whether A memcached PHP Extension Is Available
+if(!function_exists('serverinfo_has_memcached')) {
+    function serverinfo_has_memcached() {
+        return class_exists('Memcached') || class_exists('Memcache');
+    }
+}
+
+
+### Function: Get memcached Server Statistics (Prefers Memcached, Falls Back To Memcache)
+if(!function_exists('serverinfo_get_memcached_stats')) {
+    function serverinfo_get_memcached_stats() {
+        if(class_exists('Memcached')) {
+            $memcached_obj = new Memcached;
+            $memcached_obj->addServer('localhost', 11211);
+            $stats = $memcached_obj->getStats();
+            // Memcached::getStats() returns an array keyed by "host:port".
+            return is_array($stats) && !empty($stats) ? reset($stats) : false;
+        } elseif(class_exists('Memcache')) {
+            $memcached_obj = new Memcache;
+            @$memcached_obj->addServer('localhost', 11211);
+            return $memcached_obj->getStats();
+        }
+        return false;
+    }
+}
+
+
 ### Get memcached Information (Description from https://boxpanel.blueboxgrp.com/public/the_vault/index.php/memcached_Tips)
 function get_memcachedinfo() {
     echo '<div class="wrap" id="memcachedinfo" style="display: none;">'."\n";
-    if(class_exists('Memcache')) {
-        $memcached_obj = new Memcache;
-        $memcached_obj->addServer('localhost', 11211);
-        $memcachedinfo = $memcached_obj->getStats();
+    if(serverinfo_has_memcached()) {
+        $memcachedinfo = serverinfo_get_memcached_stats();
         if( is_rtl() ) : ?>
             <style type="text/css">
                 #memcachedinfo,
@@ -258,49 +312,49 @@ function get_memcachedinfo() {
                 }
             </style>
         <?php endif;
-        echo "<h2>memcached {$memcachedinfo['version']}</h2>\n";
+        echo '<h2>memcached '.esc_html($memcachedinfo['version'] ?? '')."</h2>\n";
         serverinfo_subnavi();
         if($memcachedinfo) {
             $cache_hit= ( $memcachedinfo['cmd_get'] > 0 ? ( ( $memcachedinfo['get_hits'] / $memcachedinfo['cmd_get'] ) * 100 ) : 0 );
             $cache_hit = round($cache_hit, 2);
             $cache_miss = 100 - $cache_hit;
 
-            $usage = round((($memcachedinfo['bytes']/$memcachedinfo['limit_maxbytes']) * 100), 2);
+            $usage = ($memcachedinfo['limit_maxbytes'] > 0) ? round((($memcachedinfo['bytes']/$memcachedinfo['limit_maxbytes']) * 100), 2) : 0;
             $uptime = number_format_i18n(($memcachedinfo['uptime']/60/60/24));
 
             echo '<br class="clear" />'."\n";
             echo '<table class="widefat" dir="ltr">'."\n";
             echo '<thead><tr><th>'.__('Variable Name', 'wp-serverinfo').'</th><th>'.__('Value', 'wp-serverinfo').'</th><th>'.__('Description', 'wp-serverinfo').'</th></tr></thead><tbody>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>pid</td><td>'.$memcachedinfo['pid'].'</td><td>'.__('Process ID', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>uptime</td><td>'.$uptime.'</td><td>'.__('Number of days since the process was started', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>version</td><td>'.$memcachedinfo['version'].'</td><td>'.__('memcached version', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>rusage_user</td><td>'.$memcachedinfo['rusage_user'].'</td><td>'.__('Seconds the cpu has devoted to the process as the user', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>rusage_system</td><td>'.$memcachedinfo['rusage_system'].'</td><td>'.__('Seconds the cpu has devoted to the process as the system', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>curr_items</td><td>'.number_format_i18n($memcachedinfo['curr_items']).'</td><td>'.__('Total number of items currently in memcached', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>total_items</td><td>'.number_format_i18n($memcachedinfo['total_items']).'</td><td>'.__('Total number of items that have passed through memcached', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>bytes</td><td>'.format_filesize($memcachedinfo['bytes']).' ('.$usage.'%)</td><td>'.__('Memory size currently used by curr_items', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>limit_maxbytes</td><td>'.format_filesize($memcachedinfo['limit_maxbytes']).'</td><td>'.__('Maximum memory size allocated to memcached', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>curr_connections</td><td>'.number_format_i18n($memcachedinfo['curr_connections']).'</td><td>'.__('Total number of open connections to memcached', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>total_connections</td><td>'.number_format_i18n($memcachedinfo['total_connections']).'</td><td>'.__('Total number of connections opened since memcached started running', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>connection_structures</td><td>'.number_format_i18n($memcachedinfo['connection_structures']).'</td><td>'.__('Number of connection structures allocated by the server', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>cmd_get</td><td>'.number_format_i18n($memcachedinfo['cmd_get']).'</td><td>'.__('Total GET commands issued to the server', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>cmd_set</td><td>'.number_format_i18n($memcachedinfo['cmd_set']).'</td><td>'.__('Total SET commands issued to the server', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>cmd_flush</td><td>'.number_format_i18n($memcachedinfo['cmd_flush']).'</td><td>'.__('Total FLUSH commands issued to the server', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>get_hits</td><td>'.number_format_i18n($memcachedinfo['get_hits']).' ('.$cache_hit.'%)</td><td>'.__('Total number of times a GET command was able to retrieve and return data', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>get_misses</td><td>'.number_format_i18n($memcachedinfo['get_misses']).' ('.$cache_miss.'%)</td><td>'.__('Total number of times a GET command was unable to retrieve and return data', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>delete_hits</td><td>'.number_format_i18n($memcachedinfo['delete_hits']).'</td><td>'.__('Total number of times a DELETE command was able to delete data', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>delete_misses</td><td>'.number_format_i18n($memcachedinfo['delete_misses']).'</td><td>'.__('Total number of times a DELETE command was unable to delete data', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>incr_hits</td><td>'.number_format_i18n($memcachedinfo['incr_hits']).'</td><td>'.__('Total number of times a INCR command was able to increment a value', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>incr_misses</td><td>'.number_format_i18n($memcachedinfo['incr_misses']).'</td><td>'.__('Total number of times a INCR command was unable to increment a value', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>decr_hits</td><td>'.number_format_i18n($memcachedinfo['decr_hits']).'</td><td>'.__('Total number of times a DECR command was able to decrement a value', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>decr_misses</td><td>'.number_format_i18n($memcachedinfo['decr_misses']).'</td><td>'.__('Total number of times a DECR command was unable to decrement a value', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>cas_hits</td><td>'.number_format_i18n($memcachedinfo['cas_hits']).'</td><td>'.__('Total number of times a CAS command was able to compare and swap data', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>cas_misses</td><td>'.number_format_i18n($memcachedinfo['cas_misses']).'</td><td>'.__('Total number of times a CAS command was unable to compare and swap data', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>cas_badval</td><td>'.number_format_i18n($memcachedinfo['cas_badval']).'</td><td>'.__('N/A', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>bytes_read</td><td>'.format_filesize($memcachedinfo['bytes_read']).'</td><td>'.__('Total number of bytes input into the server', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>bytes_written</td><td>'.format_filesize($memcachedinfo['bytes_written']).'</td><td>'.__('Total number of bytes written by the server', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>evictions</td><td>'.number_format_i18n($memcachedinfo['evictions']).'</td><td>'.__('Number of valid items removed from cache to free memory for new items', 'wp-serverinfo').'</td></tr>'."\n";
-            echo '<tr class="" onmouseover="this.className=\'highlight\'" onmouseout="this.className=\'\'"><td>reclaimed</td><td>'.number_format_i18n($memcachedinfo['reclaimed']).'</td><td>'.__('Number of items reclaimed', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>pid</td><td>'.esc_html($memcachedinfo['pid']).'</td><td>'.__('Process ID', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>uptime</td><td>'.$uptime.'</td><td>'.__('Number of days since the process was started', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>version</td><td>'.esc_html($memcachedinfo['version']).'</td><td>'.__('memcached version', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>rusage_user</td><td>'.esc_html($memcachedinfo['rusage_user']).'</td><td>'.__('Seconds the cpu has devoted to the process as the user', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>rusage_system</td><td>'.esc_html($memcachedinfo['rusage_system']).'</td><td>'.__('Seconds the cpu has devoted to the process as the system', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>curr_items</td><td>'.number_format_i18n($memcachedinfo['curr_items']).'</td><td>'.__('Total number of items currently in memcached', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>total_items</td><td>'.number_format_i18n($memcachedinfo['total_items']).'</td><td>'.__('Total number of items that have passed through memcached', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>bytes</td><td>'.format_filesize($memcachedinfo['bytes']).' ('.$usage.'%)</td><td>'.__('Memory size currently used by curr_items', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>limit_maxbytes</td><td>'.format_filesize($memcachedinfo['limit_maxbytes']).'</td><td>'.__('Maximum memory size allocated to memcached', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>curr_connections</td><td>'.number_format_i18n($memcachedinfo['curr_connections']).'</td><td>'.__('Total number of open connections to memcached', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>total_connections</td><td>'.number_format_i18n($memcachedinfo['total_connections']).'</td><td>'.__('Total number of connections opened since memcached started running', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>connection_structures</td><td>'.number_format_i18n($memcachedinfo['connection_structures']).'</td><td>'.__('Number of connection structures allocated by the server', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>cmd_get</td><td>'.number_format_i18n($memcachedinfo['cmd_get']).'</td><td>'.__('Total GET commands issued to the server', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>cmd_set</td><td>'.number_format_i18n($memcachedinfo['cmd_set']).'</td><td>'.__('Total SET commands issued to the server', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>cmd_flush</td><td>'.number_format_i18n($memcachedinfo['cmd_flush']).'</td><td>'.__('Total FLUSH commands issued to the server', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>get_hits</td><td>'.number_format_i18n($memcachedinfo['get_hits']).' ('.$cache_hit.'%)</td><td>'.__('Total number of times a GET command was able to retrieve and return data', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>get_misses</td><td>'.number_format_i18n($memcachedinfo['get_misses']).' ('.$cache_miss.'%)</td><td>'.__('Total number of times a GET command was unable to retrieve and return data', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>delete_hits</td><td>'.number_format_i18n($memcachedinfo['delete_hits']).'</td><td>'.__('Total number of times a DELETE command was able to delete data', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>delete_misses</td><td>'.number_format_i18n($memcachedinfo['delete_misses']).'</td><td>'.__('Total number of times a DELETE command was unable to delete data', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>incr_hits</td><td>'.number_format_i18n($memcachedinfo['incr_hits']).'</td><td>'.__('Total number of times a INCR command was able to increment a value', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>incr_misses</td><td>'.number_format_i18n($memcachedinfo['incr_misses']).'</td><td>'.__('Total number of times a INCR command was unable to increment a value', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>decr_hits</td><td>'.number_format_i18n($memcachedinfo['decr_hits']).'</td><td>'.__('Total number of times a DECR command was able to decrement a value', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>decr_misses</td><td>'.number_format_i18n($memcachedinfo['decr_misses']).'</td><td>'.__('Total number of times a DECR command was unable to decrement a value', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>cas_hits</td><td>'.number_format_i18n($memcachedinfo['cas_hits']).'</td><td>'.__('Total number of times a CAS command was able to compare and swap data', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>cas_misses</td><td>'.number_format_i18n($memcachedinfo['cas_misses']).'</td><td>'.__('Total number of times a CAS command was unable to compare and swap data', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>cas_badval</td><td>'.number_format_i18n($memcachedinfo['cas_badval']).'</td><td>'.__('N/A', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>bytes_read</td><td>'.format_filesize($memcachedinfo['bytes_read']).'</td><td>'.__('Total number of bytes input into the server', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>bytes_written</td><td>'.format_filesize($memcachedinfo['bytes_written']).'</td><td>'.__('Total number of bytes written by the server', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>evictions</td><td>'.number_format_i18n($memcachedinfo['evictions']).'</td><td>'.__('Number of valid items removed from cache to free memory for new items', 'wp-serverinfo').'</td></tr>'."\n";
+            echo '<tr><td>reclaimed</td><td>'.number_format_i18n($memcachedinfo['reclaimed']).'</td><td>'.__('Number of items reclaimed', 'wp-serverinfo').'</td></tr>'."\n";
             echo '</tbody></table>'."\n";
         }
     }
@@ -311,11 +365,11 @@ function get_memcachedinfo() {
 ### WP-Server Sub Navigation
 function serverinfo_subnavi($display = true) {
     $output = '<p style="text-align: center">';
-    $output .= '<a href="#DisplayGeneral" onclick="toggle_general(); return false;">'.__('Display General Overview', 'wp-serverinfo').'</a>';
-    $output .= ' - <a href="#DisplayPHP" onclick="toggle_php(); return false;">'.__('Display PHP Information', 'wp-serverinfo').'</a>';
-    $output .= ' - <a href="#DisplayMYSQL" onclick="toggle_mysql(); return false;">'.__('Display MYSQL Information', 'wp-serverinfo').'</a>';
-    if(class_exists('Memcache')) {
-        $output .= ' - <a href="#Displaymemcached" onclick="toggle_memcached(); return false;">'.__('Display memcached Information', 'wp-serverinfo').'</a>';
+    $output .= '<a href="#GeneralOverview" class="serverinfo-nav" data-target="GeneralOverview">'.__('Display General Overview', 'wp-serverinfo').'</a>';
+    $output .= ' - <a href="#PHPinfo" class="serverinfo-nav" data-target="PHPinfo">'.__('Display PHP Information', 'wp-serverinfo').'</a>';
+    $output .= ' - <a href="#MYSQLinfo" class="serverinfo-nav" data-target="MYSQLinfo">'.__('Display MYSQL Information', 'wp-serverinfo').'</a>';
+    if(serverinfo_has_memcached()) {
+        $output .= ' - <a href="#memcachedinfo" class="serverinfo-nav" data-target="memcachedinfo">'.__('Display memcached Information', 'wp-serverinfo').'</a>';
     }
     $output .= '</p>';
     if($display) {
@@ -433,13 +487,24 @@ if(!function_exists('get_mysql_version')) {
 }
 
 
+### Function: Get MYSQL Table Status (Cached Per Request)
+if(!function_exists('serverinfo_get_table_status')) {
+    function serverinfo_get_table_status() {
+        global $wpdb;
+        static $tablesstatus = null;
+        if(is_null($tablesstatus)) {
+            $tablesstatus = $wpdb->get_results("SHOW TABLE STATUS");
+        }
+        return $tablesstatus;
+    }
+}
+
+
 ### Function: Get MYSQL Data Usage
 if(!function_exists('get_mysql_data_usage')) {
     function get_mysql_data_usage() {
-        global $wpdb;
         $data_usage = 0;
-        $tablesstatus = $wpdb->get_results("SHOW TABLE STATUS");
-        foreach($tablesstatus as  $tablestatus) {
+        foreach(serverinfo_get_table_status() as $tablestatus) {
             $data_usage += $tablestatus->Data_length;
         }
 
@@ -451,11 +516,9 @@ if(!function_exists('get_mysql_data_usage')) {
 ### Function: Get MYSQL Index Usage
 if(!function_exists('get_mysql_index_usage')) {
     function get_mysql_index_usage() {
-        global $wpdb;
         $index_usage = 0;
-        $tablesstatus = $wpdb->get_results("SHOW TABLE STATUS");
-        foreach($tablesstatus as  $tablestatus) {
-            $index_usage +=  $tablestatus->Index_length;
+        foreach(serverinfo_get_table_status() as $tablestatus) {
+            $index_usage += $tablestatus->Index_length;
         }
 
         return $index_usage;
@@ -588,29 +651,29 @@ function wp_dashboard_serverinfo() {
     }
     echo '<p><strong>'.__('General', 'wp-serverinfo').'</strong></p>';
     echo '<ul>';
-    echo '<li>'. __('OS', 'wp-serverinfo').': <strong>'.PHP_OS.'</strong></li>';
-    echo '<li>'. __('Server', 'wp-serverinfo').': <strong>'.$_SERVER["SERVER_SOFTWARE"].'</strong></li>';
-    echo '<li>'. __('Hostname', 'wp-serverinfo').': <strong>'.$_SERVER['SERVER_NAME'].'</strong></li>';
-    echo '<li>'. __('IP:Port', 'wp-serverinfo').': <strong>'.$_SERVER['SERVER_ADDR'].':'.$_SERVER['SERVER_PORT'].'</strong></li>';
-    echo '<li>'. __('Document Root', 'wp-serverinfo').': <strong>'.$_SERVER['DOCUMENT_ROOT'].'</strong></li>';
+    echo '<li>'. __('OS', 'wp-serverinfo').': <strong>'.esc_html(PHP_OS).'</strong></li>';
+    echo '<li>'. __('Server', 'wp-serverinfo').': <strong>'.esc_html($_SERVER['SERVER_SOFTWARE'] ?? '').'</strong></li>';
+    echo '<li>'. __('Hostname', 'wp-serverinfo').': <strong>'.esc_html($_SERVER['SERVER_NAME'] ?? '').'</strong></li>';
+    echo '<li>'. __('IP:Port', 'wp-serverinfo').': <strong>'.esc_html($_SERVER['SERVER_ADDR'] ?? '').':'.esc_html($_SERVER['SERVER_PORT'] ?? '').'</strong></li>';
+    echo '<li>'. __('Document Root', 'wp-serverinfo').': <strong>'.esc_html($_SERVER['DOCUMENT_ROOT'] ?? '').'</strong></li>';
     echo '</ul>';
     echo '<p><strong>PHP</strong></p>';
     echo '<ul>';
-    echo '<li>v<strong>'.PHP_VERSION.'</strong></li>';
-    echo '<li>GD: <strong>'.get_gd_version().'</strong></li>';
-    echo '<li>'. __('Memory Limit', 'wp-serverinfo').': <strong>'.format_php_size(get_php_memory_limit()).'</strong></li>';
-    echo '<li>'. __('Max Script Execute Time', 'wp-serverinfo').': <strong>'.get_php_max_execution().'s</strong></li>';
-    echo '<li>'. __('Max Post Size', 'wp-serverinfo').': <strong>'. format_php_size(get_php_post_max()).'</strong></li>';
-    echo '<li>'. __('Max Upload Size', 'wp-serverinfo').': <strong>'.format_php_size(get_php_upload_max()).'</strong></li>';
+    echo '<li>v<strong>'.esc_html(PHP_VERSION).'</strong></li>';
+    echo '<li>GD: <strong>'.esc_html(get_gd_version()).'</strong></li>';
+    echo '<li>'. __('Memory Limit', 'wp-serverinfo').': <strong>'.esc_html(format_php_size(get_php_memory_limit())).'</strong></li>';
+    echo '<li>'. __('Max Script Execute Time', 'wp-serverinfo').': <strong>'.esc_html(get_php_max_execution()).'s</strong></li>';
+    echo '<li>'. __('Max Post Size', 'wp-serverinfo').': <strong>'. esc_html(format_php_size(get_php_post_max())).'</strong></li>';
+    echo '<li>'. __('Max Upload Size', 'wp-serverinfo').': <strong>'.esc_html(format_php_size(get_php_upload_max())).'</strong></li>';
     echo '</ul>';
     echo '<p><strong>MYSQL</strong></p>';
     echo '<ul>';
-    echo '<li>v<strong>'.get_mysql_version().'</strong></li>';
-    echo '<li>'. __('Maximum No. Connections', 'wp-serverinfo').': <strong>'.number_format_i18n(get_mysql_max_allowed_connections(), 0).'</strong></li>';
-    echo '<li>'. __('Maximum Packet Size', 'wp-serverinfo').': <strong>'.format_filesize(get_mysql_max_allowed_packet()).'</strong></li>';
-    echo '<li>'. __('Data Disk Usage', 'wp-serverinfo').': <strong>'.format_filesize(get_mysql_data_usage()).'</strong></li>';
-    echo '<li>'. __('Index Disk Usage', 'wp-serverinfo').': <strong>'.format_filesize(get_mysql_index_usage()).'</strong></li>';
+    echo '<li>v<strong>'.esc_html(get_mysql_version()).'</strong></li>';
+    echo '<li>'. __('Maximum No. Connections', 'wp-serverinfo').': <strong>'.esc_html(number_format_i18n(get_mysql_max_allowed_connections(), 0)).'</strong></li>';
+    echo '<li>'. __('Maximum Packet Size', 'wp-serverinfo').': <strong>'.esc_html(format_filesize(get_mysql_max_allowed_packet())).'</strong></li>';
+    echo '<li>'. __('Data Disk Usage', 'wp-serverinfo').': <strong>'.esc_html(format_filesize(get_mysql_data_usage())).'</strong></li>';
+    echo '<li>'. __('Index Disk Usage', 'wp-serverinfo').': <strong>'.esc_html(format_filesize(get_mysql_index_usage())).'</strong></li>';
     echo '</ul>';
-    echo '<p class="textright"><a href="'.admin_url('index.php?page=wp-serverinfo/wp-serverinfo.php').'" class="button">'.__('View all', 'wp-serverinfo').'</a></p>';
+    echo '<p class="textright"><a href="'.esc_url(admin_url('index.php?page=wp-serverinfo')).'" class="button">'.__('View all', 'wp-serverinfo').'</a></p>';
     echo '</div>';
 }

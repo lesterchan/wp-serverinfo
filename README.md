@@ -3,8 +3,8 @@ Contributors: GamerZ
 Donate link: http://lesterchan.net/site/donation/  
 Tags: phpinfo, mysql, php, server, serverinfo, info, information, memcached, memcache  
 Requires at least: 4.0  
-Tested up to: 6.3  
-Stable tag: 1.66  
+Tested up to: 7.0  
+Stable tag: 1.66.1  
 
 Display your host's PHP, MYSQL & memcached (if installed) information on your WordPress dashboard.
 
@@ -26,6 +26,17 @@ Display your host's PHP, MYSQL & memcached (if installed) information on your Wo
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
 
 ## Changelog
+### 1.66.1
+* NEW: WordPress 7.0
+* FIX: Escape server/PHP/MySQL/memcached output to prevent XSS
+* FIX: Guard $_SERVER access to avoid warnings when keys are unset
+* CHANGE: Remove jQuery dependency and inline the vanilla JS (removed serverinfo-js.js / serverinfo-js.dev.js)
+* CHANGE: Require the manage_options capability for the admin page (was add_users)
+* CHANGE: Modernize the admin page slug to wp-serverinfo
+* CHANGE: Prefer the Memcached extension, falling back to Memcache
+* CHANGE: Add direct-access (ABSPATH) guard
+* CHANGE: Rebuild PHP tab from ini_get_all() instead of scraping phpinfo() output (no longer exposes environment variables / request headers)
+
 ### 1.66
 * NEW: Remove get_php_magic_quotes_gpc() and SERVER_ADMIN
 
