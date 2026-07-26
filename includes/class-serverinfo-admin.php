@@ -1,0 +1,515 @@
+<?php
+/**
+ * The WP-ServerInfo admin screen.
+ *
+ * @package WP-ServerInfo
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Renders the tabbed admin page under Dashboard.
+ *
+ * Replaces the global display_serverinfo() / get_*info() functions from
+ * before 3.0.0.
+ */
+class ServerInfo_Admin {
+
+	/**
+	 * The admin page slug.
+	 */
+	const SLUG = 'wp-serverinfo';
+
+	/**
+	 * Register the submenu page under the Dashboard menu.
+	 *
+	 * @return void
+	 */
+	public static function register_menu() {
+		add_submenu_page(
+			'index.php',
+			__( 'WP-ServerInfo', 'wp-serverinfo' ),
+			__( 'WP-ServerInfo', 'wp-serverinfo' ),
+			'manage_options',
+			self::SLUG,
+			array( self::class, 'render' )
+		);
+	}
+
+	/**
+	 * Build the tab list, hiding panels whose extension is not installed.
+	 *
+	 * @return array<string,string> Tab slug => label.
+	 */
+	private static function tabs() {
+		$tabs = array(
+			'general' => __( 'General', 'wp-serverinfo' ),
+			'php'     => __( 'PHP', 'wp-serverinfo' ),
+			'mysql'   => __( 'MySQL', 'wp-serverinfo' ),
+		);
+
+		if ( ServerInfo_Cache::has_memcached() ) {
+			$tabs['memcached'] = __( 'memcached', 'wp-serverinfo' );
+		}
+
+		if ( ServerInfo_Cache::has_redis() ) {
+			$tabs['redis'] = __( 'Redis', 'wp-serverinfo' );
+		}
+
+		return $tabs;
+	}
+
+	/**
+	 * Render the admin page.
+	 *
+	 * @return void
+	 */
+	public static function render() {
+		$tabs = self::tabs();
+
+		// Read-only tab selection driven by the URL; no state change, so no nonce is needed.
+		$active = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
+
+		if ( ! isset( $tabs[ $active ] ) ) {
+			$active = 'general';
+		}
+
+		self::render_styles();
+
+		echo '<div class="wrap">' . "\n";
+		echo '<h1>' . esc_html__( 'WP-ServerInfo', 'wp-serverinfo' ) . '</h1>' . "\n";
+
+		echo '<h2 class="nav-tab-wrapper">';
+		foreach ( $tabs as $tab => $label ) {
+			$url = add_query_arg(
+				array(
+					'page' => self::SLUG,
+					'tab'  => $tab,
+				),
+				admin_url( 'index.php' )
+			);
+
+			printf(
+				'<a href="%s" class="nav-tab%s">%s</a>',
+				esc_url( $url ),
+				$active === $tab ? ' nav-tab-active' : '',
+				esc_html( $label )
+			);
+		}
+		echo '</h2>' . "\n";
+
+		switch ( $active ) {
+			case 'php':
+				self::render_php();
+				break;
+			case 'mysql':
+				self::render_mysql();
+				break;
+			case 'memcached':
+				self::render_memcached();
+				break;
+			case 'redis':
+				self::render_redis();
+				break;
+			default:
+				self::render_general();
+				break;
+		}
+
+		echo '</div>' . "\n";
+	}
+
+	/**
+	 * Emit the page's CSS.
+	 *
+	 * Previously each panel carried its own near-identical RTL block; the
+	 * rules are the same for every panel, so they are emitted once here.
+	 *
+	 * @return void
+	 */
+	private static function render_styles() {
+		echo '<style>' . "\n";
+		echo '.wrap .widefat tbody tr:hover td { background-color: #f6f7f7; }' . "\n";
+
+		if ( is_rtl() ) {
+			/*
+			 * Server values -- paths, versions, IP addresses, ini directives --
+			 * are latin text regardless of the admin language, so the tables
+			 * read left to right even on an RTL install.
+			 */
+			echo '.wrap .serverinfo-panel,' . "\n";
+			echo '.wrap .serverinfo-panel table,' . "\n";
+			echo '.wrap .serverinfo-panel th,' . "\n";
+			echo '.wrap .serverinfo-panel td { direction: ltr; text-align: left; }' . "\n";
+			echo '.wrap .serverinfo-panel h2 { padding: 0.5em 0 0; }' . "\n";
+		}
+
+		echo '</style>' . "\n";
+	}
+
+	/**
+	 * Open a panel wrapper.
+	 *
+	 * @param string $id The panel's DOM id, kept for backwards compatibility
+	 *                   with anyone styling these screens.
+	 * @return void
+	 */
+	private static function open_panel( $id ) {
+		echo '<div id="' . esc_attr( $id ) . '" class="serverinfo-panel">' . "\n";
+	}
+
+	/**
+	 * Render one table row of two label/value pairs.
+	 *
+	 * @param string $row_class  Row class, '' or 'alternate'.
+	 * @param string $left_label Left label.
+	 * @param string $left_value Left value.
+	 * @param string $right_label Right label.
+	 * @param string $right_value Right value.
+	 * @return void
+	 */
+	private static function render_pair_row( $row_class, $left_label, $left_value, $right_label, $right_value ) {
+		printf(
+			"<tr%s><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+			'' !== $row_class ? ' class="' . esc_attr( $row_class ) . '"' : '',
+			esc_html( $left_label ),
+			esc_html( $left_value ),
+			esc_html( $right_label ),
+			esc_html( $right_value )
+		);
+	}
+
+	/**
+	 * Output the General Overview panel.
+	 *
+	 * @return void
+	 */
+	private static function render_general() {
+		self::open_panel( 'GeneralOverview' );
+
+		echo '<h2>' . esc_html__( 'General Overview', 'wp-serverinfo' ) . '</h2>' . "\n";
+		echo '<table class="widefat">' . "\n";
+		printf(
+			"<thead><tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+			esc_html__( 'Variable Name', 'wp-serverinfo' ),
+			esc_html__( 'Value', 'wp-serverinfo' ),
+			esc_html__( 'Variable Name', 'wp-serverinfo' ),
+			esc_html__( 'Value', 'wp-serverinfo' )
+		);
+
+		$date_time = mysql2date(
+			sprintf(
+				/* translators: 1: date format, 2: time format */
+				__( '%1$s @ %2$s', 'wp-serverinfo' ),
+				get_option( 'date_format' ),
+				get_option( 'time_format' )
+			),
+			current_time( 'mysql' )
+		);
+
+		$rows = array(
+			array(
+				__( 'OS', 'wp-serverinfo' ),
+				PHP_OS,
+				__( 'Database Data Disk Usage', 'wp-serverinfo' ),
+				ServerInfo_Format::filesize( ServerInfo_MySQL::data_usage() ),
+			),
+			array(
+				__( 'Server', 'wp-serverinfo' ),
+				ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ),
+				__( 'Database Index Disk Usage', 'wp-serverinfo' ),
+				ServerInfo_Format::filesize( ServerInfo_MySQL::index_usage() ),
+			),
+			array(
+				'PHP',
+				'v' . PHP_VERSION,
+				__( 'MYSQL Maximum Packet Size', 'wp-serverinfo' ),
+				ServerInfo_Format::filesize( ServerInfo_MySQL::max_allowed_packet() ),
+			),
+			array(
+				'MYSQL',
+				'v' . ServerInfo_MySQL::version(),
+				__( 'MYSQL Maximum No. Connection', 'wp-serverinfo' ),
+				ServerInfo_Format::number( ServerInfo_MySQL::max_connections() ),
+			),
+			array(
+				'GD',
+				ServerInfo_PHP::gd_version(),
+				__( 'MYSQL Query Cache Size', 'wp-serverinfo' ),
+				ServerInfo_Format::filesize( ServerInfo_MySQL::query_cache_size() ),
+			),
+			array(
+				__( 'Server Hostname', 'wp-serverinfo' ),
+				ServerInfo_PHP::server_value( 'SERVER_NAME' ),
+				__( 'PHP Short Tag', 'wp-serverinfo' ),
+				ServerInfo_PHP::short_tag(),
+			),
+			array(
+				__( 'Server IP:Port', 'wp-serverinfo' ),
+				ServerInfo_PHP::server_address() . ':' . ServerInfo_PHP::server_value( 'SERVER_PORT' ),
+				__( 'PHP Max Script Execute Time', 'wp-serverinfo' ),
+				ServerInfo_PHP::max_execution() . 's',
+			),
+			array(
+				__( 'Server Document Root', 'wp-serverinfo' ),
+				ServerInfo_PHP::server_value( 'DOCUMENT_ROOT' ),
+				__( 'PHP Memory Limit', 'wp-serverinfo' ),
+				ServerInfo_Format::php_size( ServerInfo_PHP::memory_limit() ),
+			),
+			array(
+				__( 'Server Date/Time', 'wp-serverinfo' ),
+				$date_time,
+				__( 'PHP Max Upload Size', 'wp-serverinfo' ),
+				ServerInfo_Format::php_size( ServerInfo_PHP::upload_max() ),
+			),
+			array(
+				__( 'Server Load', 'wp-serverinfo' ),
+				ServerInfo_PHP::server_load(),
+				__( 'PHP Max Post Size', 'wp-serverinfo' ),
+				ServerInfo_Format::php_size( ServerInfo_PHP::post_max() ),
+			),
+		);
+
+		foreach ( $rows as $index => $row ) {
+			self::render_pair_row( 0 === $index % 2 ? '' : 'alternate', $row[0], $row[1], $row[2], $row[3] );
+		}
+
+		echo '</tbody></table>' . "\n";
+		echo '</div>' . "\n";
+	}
+
+	/**
+	 * Output the PHP Information panel.
+	 *
+	 * @return void
+	 */
+	private static function render_php() {
+		self::open_panel( 'PHPinfo' );
+
+		echo '<h2>PHP ' . esc_html( phpversion() ) . '</h2>' . "\n";
+
+		echo '<br class="clear" />' . "\n";
+		echo '<table class="widefat"><tbody>' . "\n";
+		foreach ( ServerInfo_PHP::summary() as $label => $value ) {
+			printf(
+				"<tr><td><strong>%s</strong></td><td>%s</td></tr>\n",
+				esc_html( $label ),
+				esc_html( $value )
+			);
+		}
+		echo '</tbody></table>' . "\n";
+
+		$ini = ServerInfo_PHP::ini_directives();
+
+		if ( ! empty( $ini ) ) {
+			echo '<br class="clear" />' . "\n";
+			echo '<table class="widefat">' . "\n";
+			printf(
+				"<thead><tr><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+				esc_html__( 'Directive', 'wp-serverinfo' ),
+				esc_html__( 'Local Value', 'wp-serverinfo' ),
+				esc_html__( 'Master Value', 'wp-serverinfo' )
+			);
+
+			foreach ( $ini as $directive => $values ) {
+				printf(
+					"<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+					esc_html( $directive ),
+					esc_html( $values['local_value'] ?? '' ),
+					esc_html( $values['global_value'] ?? '' )
+				);
+			}
+
+			echo '</tbody></table>' . "\n";
+		}
+
+		echo '</div>' . "\n";
+	}
+
+	/**
+	 * Output the MYSQL Information panel.
+	 *
+	 * @return void
+	 */
+	private static function render_mysql() {
+		self::open_panel( 'MYSQLinfo' );
+
+		echo '<h2>MYSQL ' . esc_html( ServerInfo_MySQL::version() ) . '</h2>' . "\n";
+
+		$variables = ServerInfo_MySQL::variables();
+
+		if ( $variables ) {
+			echo '<br class="clear" />' . "\n";
+			echo '<table class="widefat" dir="ltr">' . "\n";
+			printf(
+				"<thead><tr><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+				esc_html__( 'Variable Name', 'wp-serverinfo' ),
+				esc_html__( 'Value', 'wp-serverinfo' )
+			);
+
+			foreach ( $variables as $variable ) {
+				printf(
+					"<tr><td>%s</td><td>%s</td></tr>\n",
+					// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column names from SHOW VARIABLES.
+					esc_html( $variable->Variable_name ),
+					esc_html( $variable->Value ) // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column names from SHOW VARIABLES.
+				);
+			}
+
+			echo '</tbody></table>' . "\n";
+		}
+
+		echo '</div>' . "\n";
+	}
+
+	/**
+	 * Render a three-column statistics table.
+	 *
+	 * @param array $rows List of [ name, value, description ] triples.
+	 * @return void
+	 */
+	private static function render_stats_table( array $rows ) {
+		echo '<br class="clear" />' . "\n";
+		echo '<table class="widefat" dir="ltr">' . "\n";
+		printf(
+			"<thead><tr><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+			esc_html__( 'Variable Name', 'wp-serverinfo' ),
+			esc_html__( 'Value', 'wp-serverinfo' ),
+			esc_html__( 'Description', 'wp-serverinfo' )
+		);
+
+		foreach ( $rows as $row ) {
+			printf(
+				"<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+				esc_html( $row[0] ),
+				esc_html( $row[1] ),
+				esc_html( $row[2] )
+			);
+		}
+
+		echo '</tbody></table>' . "\n";
+	}
+
+	/**
+	 * Output the memcached Information panel.
+	 *
+	 * Stat descriptions from https://boxpanel.blueboxgrp.com/public/the_vault/index.php/memcached_Tips
+	 *
+	 * @return void
+	 */
+	private static function render_memcached() {
+		self::open_panel( 'memcachedinfo' );
+
+		$info = ServerInfo_Cache::memcached_stats();
+
+		echo '<h2>memcached ' . esc_html( is_array( $info ) ? ( $info['version'] ?? '' ) : '' ) . '</h2>' . "\n";
+
+		if ( ! $info ) {
+			echo '<p>' . esc_html__( 'Could not connect to the memcached server.', 'wp-serverinfo' ) . '</p>' . "\n";
+			echo '</div>' . "\n";
+			return;
+		}
+
+		/*
+		 * Read every stat through this rather than indexing directly. The stat
+		 * set is not fixed: it varies by memcached version and by extension
+		 * (Memcache exposes a smaller set than Memcached), and several of the
+		 * keys below were only added in 1.4.x. Indexing a key the server did
+		 * not report warns on PHP 8 and prints the warning into the table.
+		 */
+		$stat = function ( $key, $fallback = 0 ) use ( $info ) {
+			return isset( $info[ $key ] ) ? $info[ $key ] : $fallback;
+		};
+
+		$cmd_get    = (float) $stat( 'cmd_get' );
+		$cache_hit  = $cmd_get > 0 ? round( ( (float) $stat( 'get_hits' ) / $cmd_get ) * 100, 2 ) : 0;
+		$cache_miss = 100 - $cache_hit;
+
+		$max_bytes = (float) $stat( 'limit_maxbytes' );
+		$usage     = $max_bytes > 0 ? round( ( (float) $stat( 'bytes' ) / $max_bytes ) * 100, 2 ) : 0;
+		$uptime    = number_format_i18n( (float) $stat( 'uptime' ) / 60 / 60 / 24 );
+
+		self::render_stats_table(
+			array(
+				array( 'pid', $stat( 'pid' ), __( 'Process ID', 'wp-serverinfo' ) ),
+				array( 'uptime', $uptime, __( 'Number of days since the process was started', 'wp-serverinfo' ) ),
+				array( 'version', $stat( 'version', '' ), __( 'memcached version', 'wp-serverinfo' ) ),
+				array( 'rusage_user', $stat( 'rusage_user' ), __( 'Seconds the cpu has devoted to the process as the user', 'wp-serverinfo' ) ),
+				array( 'rusage_system', $stat( 'rusage_system' ), __( 'Seconds the cpu has devoted to the process as the system', 'wp-serverinfo' ) ),
+				array( 'curr_items', number_format_i18n( $stat( 'curr_items' ) ), __( 'Total number of items currently in memcached', 'wp-serverinfo' ) ),
+				array( 'total_items', number_format_i18n( $stat( 'total_items' ) ), __( 'Total number of items that have passed through memcached', 'wp-serverinfo' ) ),
+				array( 'bytes', ServerInfo_Format::filesize( $stat( 'bytes' ) ) . ' (' . $usage . '%)', __( 'Memory size currently used by curr_items', 'wp-serverinfo' ) ),
+				array( 'limit_maxbytes', ServerInfo_Format::filesize( $stat( 'limit_maxbytes' ) ), __( 'Maximum memory size allocated to memcached', 'wp-serverinfo' ) ),
+				array( 'curr_connections', number_format_i18n( $stat( 'curr_connections' ) ), __( 'Total number of open connections to memcached', 'wp-serverinfo' ) ),
+				array( 'total_connections', number_format_i18n( $stat( 'total_connections' ) ), __( 'Total number of connections opened since memcached started running', 'wp-serverinfo' ) ),
+				array( 'connection_structures', number_format_i18n( $stat( 'connection_structures' ) ), __( 'Number of connection structures allocated by the server', 'wp-serverinfo' ) ),
+				array( 'cmd_get', number_format_i18n( $stat( 'cmd_get' ) ), __( 'Total GET commands issued to the server', 'wp-serverinfo' ) ),
+				array( 'cmd_set', number_format_i18n( $stat( 'cmd_set' ) ), __( 'Total SET commands issued to the server', 'wp-serverinfo' ) ),
+				array( 'cmd_flush', number_format_i18n( $stat( 'cmd_flush' ) ), __( 'Total FLUSH commands issued to the server', 'wp-serverinfo' ) ),
+				array( 'get_hits', number_format_i18n( $stat( 'get_hits' ) ) . ' (' . $cache_hit . '%)', __( 'Total number of times a GET command was able to retrieve and return data', 'wp-serverinfo' ) ),
+				array( 'get_misses', number_format_i18n( $stat( 'get_misses' ) ) . ' (' . $cache_miss . '%)', __( 'Total number of times a GET command was unable to retrieve and return data', 'wp-serverinfo' ) ),
+				array( 'delete_hits', number_format_i18n( $stat( 'delete_hits' ) ), __( 'Total number of times a DELETE command was able to delete data', 'wp-serverinfo' ) ),
+				array( 'delete_misses', number_format_i18n( $stat( 'delete_misses' ) ), __( 'Total number of times a DELETE command was unable to delete data', 'wp-serverinfo' ) ),
+				array( 'incr_hits', number_format_i18n( $stat( 'incr_hits' ) ), __( 'Total number of times a INCR command was able to increment a value', 'wp-serverinfo' ) ),
+				array( 'incr_misses', number_format_i18n( $stat( 'incr_misses' ) ), __( 'Total number of times a INCR command was unable to increment a value', 'wp-serverinfo' ) ),
+				array( 'decr_hits', number_format_i18n( $stat( 'decr_hits' ) ), __( 'Total number of times a DECR command was able to decrement a value', 'wp-serverinfo' ) ),
+				array( 'decr_misses', number_format_i18n( $stat( 'decr_misses' ) ), __( 'Total number of times a DECR command was unable to decrement a value', 'wp-serverinfo' ) ),
+				array( 'cas_hits', number_format_i18n( $stat( 'cas_hits' ) ), __( 'Total number of times a CAS command was able to compare and swap data', 'wp-serverinfo' ) ),
+				array( 'cas_misses', number_format_i18n( $stat( 'cas_misses' ) ), __( 'Total number of times a CAS command was unable to compare and swap data', 'wp-serverinfo' ) ),
+				array( 'cas_badval', number_format_i18n( $stat( 'cas_badval' ) ), __( 'N/A', 'wp-serverinfo' ) ),
+				array( 'bytes_read', ServerInfo_Format::filesize( $stat( 'bytes_read' ) ), __( 'Total number of bytes input into the server', 'wp-serverinfo' ) ),
+				array( 'bytes_written', ServerInfo_Format::filesize( $stat( 'bytes_written' ) ), __( 'Total number of bytes written by the server', 'wp-serverinfo' ) ),
+				array( 'evictions', number_format_i18n( $stat( 'evictions' ) ), __( 'Number of valid items removed from cache to free memory for new items', 'wp-serverinfo' ) ),
+				array( 'reclaimed', number_format_i18n( $stat( 'reclaimed' ) ), __( 'Number of items reclaimed', 'wp-serverinfo' ) ),
+			)
+		);
+
+		echo '</div>' . "\n";
+	}
+
+	/**
+	 * Output the Redis Information panel.
+	 *
+	 * @return void
+	 */
+	private static function render_redis() {
+		self::open_panel( 'Redisinfo' );
+
+		$info = ServerInfo_Cache::redis_stats();
+
+		echo '<h2>Redis ' . esc_html( is_array( $info ) ? ( $info['redis_version'] ?? '' ) : '' ) . '</h2>' . "\n";
+
+		if ( ! $info ) {
+			echo '<p>' . esc_html__( 'Could not connect to the Redis server.', 'wp-serverinfo' ) . '</p>' . "\n";
+			echo '</div>' . "\n";
+			return;
+		}
+
+		$hits    = isset( $info['keyspace_hits'] ) ? (int) $info['keyspace_hits'] : 0;
+		$misses  = isset( $info['keyspace_misses'] ) ? (int) $info['keyspace_misses'] : 0;
+		$hit_pct = ServerInfo_Cache::redis_hit_ratio( $info );
+
+		self::render_stats_table(
+			array(
+				array( 'redis_version', $info['redis_version'] ?? '', __( 'Redis server version', 'wp-serverinfo' ) ),
+				array( 'redis_mode', $info['redis_mode'] ?? '', __( 'Server mode (standalone, sentinel or cluster)', 'wp-serverinfo' ) ),
+				array( 'uptime_in_days', number_format_i18n( $info['uptime_in_days'] ?? 0 ), __( 'Number of days since the server was started', 'wp-serverinfo' ) ),
+				array( 'connected_clients', number_format_i18n( $info['connected_clients'] ?? 0 ), __( 'Number of client connections', 'wp-serverinfo' ) ),
+				array( 'used_memory', $info['used_memory_human'] ?? ServerInfo_Format::filesize( $info['used_memory'] ?? 0 ), __( 'Memory allocated by Redis', 'wp-serverinfo' ) ),
+				array( 'used_memory_peak', $info['used_memory_peak_human'] ?? ServerInfo_Format::filesize( $info['used_memory_peak'] ?? 0 ), __( 'Peak memory consumed by Redis', 'wp-serverinfo' ) ),
+				array( 'maxmemory', $info['maxmemory_human'] ?? ServerInfo_Format::filesize( $info['maxmemory'] ?? 0 ), __( 'Memory limit configured for Redis', 'wp-serverinfo' ) ),
+				array( 'maxmemory_policy', $info['maxmemory_policy'] ?? '', __( 'Eviction policy applied when the memory limit is reached', 'wp-serverinfo' ) ),
+				array( 'total_connections_received', number_format_i18n( $info['total_connections_received'] ?? 0 ), __( 'Total number of connections accepted by the server', 'wp-serverinfo' ) ),
+				array( 'total_commands_processed', number_format_i18n( $info['total_commands_processed'] ?? 0 ), __( 'Total number of commands processed by the server', 'wp-serverinfo' ) ),
+				array( 'instantaneous_ops_per_sec', number_format_i18n( $info['instantaneous_ops_per_sec'] ?? 0 ), __( 'Number of commands processed per second', 'wp-serverinfo' ) ),
+				array( 'keyspace_hits', number_format_i18n( $hits ) . ' (' . $hit_pct . '%)', __( 'Number of successful lookups of keys in the main dictionary', 'wp-serverinfo' ) ),
+				array( 'keyspace_misses', number_format_i18n( $misses ), __( 'Number of failed lookups of keys in the main dictionary', 'wp-serverinfo' ) ),
+				array( 'expired_keys', number_format_i18n( $info['expired_keys'] ?? 0 ), __( 'Total number of key expiration events', 'wp-serverinfo' ) ),
+				array( 'evicted_keys', number_format_i18n( $info['evicted_keys'] ?? 0 ), __( 'Number of evicted keys due to the memory limit', 'wp-serverinfo' ) ),
+				array( 'connected_slaves', number_format_i18n( $info['connected_slaves'] ?? 0 ), __( 'Number of connected replicas', 'wp-serverinfo' ) ),
+			)
+		);
+
+		echo '</div>' . "\n";
+	}
+}
