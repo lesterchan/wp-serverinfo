@@ -4,8 +4,8 @@
  * Plugin URI: https://lesterchan.net/portfolio/programming/php/
  * Description: Display your host's PHP, MYSQL, memcached & Redis information on your WordPress dashboard.
  * Version: 2.0.0
- * Requires at least: 4.6
- * Requires PHP: 7.2
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
  * Author: Lester 'GaMerZ' Chan
  * Author URI: https://lesterchan.net
  * License: GPLv2 or later
