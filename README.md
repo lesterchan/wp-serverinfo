@@ -4,7 +4,7 @@ Donate link: https://lesterchan.net/site/donation/
 Tags: phpinfo, mysql, php, memcached, redis  
 Requires at least: 6.0  
 Tested up to: 7.0  
-Stable tag: 2.0.0  
+Stable tag: 3.0.0  
 Requires PHP: 7.4  
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -23,6 +23,23 @@ Display your host's PHP, MYSQL, memcached & Redis information on your WordPress 
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
 
 ## Changelog
+### 3.0.0
+* NEW: `serverinfo_memcached_server` and `serverinfo_redis_server` filters to point the memcached and Redis panels at a server other than localhost
+* NEW: The memcached and Redis panels say the server is unreachable instead of rendering an empty panel
+* FIX: "Attempt to read property on null" on every render of the General tab and the dashboard widget, because MySQL 8.0 removed `query_cache_size` and the missing row was dereferenced anyway
+* FIX: Lowercase PHP shorthand sizes (`128m`, `1g`) displayed as the raw string instead of a formatted size
+* FIX: `memory_limit = -1` displayed as "unknown" rather than "Unlimited"
+* FIX: `max_execution_time = 0`, meaning no script timeout, displayed as "N/As"
+* FIX: A value sitting exactly on a unit boundary used the unit below it, so one gibibyte displayed as "1,024.0 MiB"
+* FIX: The server load probe ran `system('uptime')`, which prints its output rather than returning it, so the raw uptime line was printed into the General table on hosts where `system()` was enabled
+* FIX: The dashboard widget showed a bare ":80" for the server IP on IIS
+* FIX: PHP 8 warnings from the memcached panel when the server did not report every statistic
+* CHANGE: Read the server load from `sys_getloadavg()` where available, falling back to `/proc/loadavg` and then a shell
+* CHANGE: Restructure the plugin into `includes/` with one class per concern; the main file is now just the header, constants and boot
+* CHANGE: Remove the seventeen global functions (`format_filesize()`, `get_mysql_version()`, `get_serverload()` and friends) with no deprecation shims. They were never a documented API, and their generic names collided with other plugins
+* CHANGE: Remove the dead `phpinfo()` scraping fallback in the GD version probe
+* CHANGE: Add a PHPUnit test suite and GitHub Actions CI
+
 ### 2.0.0
 * NEW: Redis information panel and dashboard-widget section (via the phpredis extension)
 * NEW: Redesigned admin page with native WordPress tabs (bookmarkable, no JavaScript required)

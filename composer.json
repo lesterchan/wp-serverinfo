@@ -1,0 +1,26 @@
+{
+	"name": "lesterchan/wp-serverinfo",
+	"description": "Display your host's PHP, MYSQL, memcached & Redis information on your WordPress dashboard.",
+	"type": "wordpress-plugin",
+	"homepage": "https://wordpress.org/plugins/wp-serverinfo/",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Lester Chan",
+			"email": "lesterchan@gmail.com"
+		}
+	],
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^9.6",
+		"yoast/phpunit-polyfills": "^2.0"
+	},
+	"scripts": {
+		"test": "phpunit"
+	},
+	"config": {
+		"allow-plugins": false
+	}
+}
