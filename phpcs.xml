@@ -45,6 +45,29 @@
 	</rule>
 
 	<!--
+		Several tests assert on the plugin's own source - that uninstall.php
+		lifts the get_sites() cap, that the GD probe no longer scrapes
+		phpinfo(). Those are invariants a single-site suite cannot reach any
+		other way. file_get_contents() on a local path is the right tool;
+		wp_remote_get() fetches over HTTP.
+	-->
+	<rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+
+	<!--
+		test-php.php drives real ini values through the probes, because the
+		bugs it guards were about a directive's value being misread. Setting
+		them is the test.
+	-->
+	<rule ref="WordPress.PHP.IniSet">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.NoSilencedErrors">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+
+	<!--
 		The whole plugin is live server introspection: SHOW VARIABLES, SHOW
 		TABLE STATUS and SELECT VERSION() have no core API wrapper, and their
 		results must not be cached or the panel reports stale figures. The

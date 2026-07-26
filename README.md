@@ -26,6 +26,7 @@ I spent most of my free time creating, updating, maintaining and supporting thes
 ### 3.0.0
 * NEW: `serverinfo_memcached_server` and `serverinfo_redis_server` filters to point the memcached and Redis panels at a server other than localhost
 * NEW: The memcached and Redis panels say the server is unreachable instead of rendering an empty panel
+* NEW: Uninstalling now clears the per-user dashboard state WordPress records for the Server Information widget, which previously stayed in the database forever
 * FIX: "Attempt to read property on null" on every render of the General tab and the dashboard widget, because MySQL 8.0 removed `query_cache_size` and the missing row was dereferenced anyway
 * FIX: Lowercase PHP shorthand sizes (`128m`, `1g`) displayed as the raw string instead of a formatted size
 * FIX: `memory_limit = -1` displayed as "unknown" rather than "Unlimited"
