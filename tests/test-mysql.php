@@ -12,7 +12,7 @@
 /**
  * Covers MySQL server introspection against a real database.
  */
-class WP_ServerInfo_MySQL_Test extends WP_UnitTestCase {
+class WP_ServerInfo_MySQL_Test extends WP_ServerInfo_TestCase {
 
 	/**
 	 * SHOW VARIABLES LIKE returns no row for a variable that does not exist,

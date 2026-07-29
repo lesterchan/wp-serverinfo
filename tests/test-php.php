@@ -11,7 +11,7 @@
 /**
  * Covers the PHP and host environment probes.
  */
-class WP_ServerInfo_PHP_Test extends WP_UnitTestCase {
+class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 	/**
 	 * $_SERVER keys these tests overwrite, restored in tear_down.
@@ -174,6 +174,99 @@ class WP_ServerInfo_PHP_Test extends WP_UnitTestCase {
 		$this->assertSame( phpversion(), $summary['PHP Version'] );
 		$this->assertSame( php_sapi_name(), $summary['Server API'] );
 		$this->assertNotEmpty( $summary['Loaded Extensions'] );
+	}
+
+	/**
+	 * Neither key set at all is a bare colon in the IP:Port row, not a warning.
+	 */
+	public function test_server_address_is_empty_when_the_host_reports_neither_key() {
+		$GLOBALS['is_IIS'] = false;
+
+		unset( $_SERVER['SERVER_ADDR'], $_SERVER['LOCAL_ADDR'] );
+
+		$this->assertSame( '', WP_ServerInfo_PHP::server_address() );
+	}
+
+	/**
+	 * A directive whose value is the empty string is not configured, and reads
+	 * as N/A -- but "0" is a configured value and must not.
+	 */
+	public function test_an_empty_directive_reads_as_na_but_zero_does_not() {
+		if ( '' !== ini_get( 'error_append_string' ) ) {
+			$this->markTestSkipped( 'This host has configured error_append_string, so it is not empty here.' );
+		}
+
+		$this->assertSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'error_append_string' ) );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'precision' ) );
+	}
+
+	/**
+	 * The four ini getters are one-liners over ini_value(), so the thing worth
+	 * asserting is that each reads the directive it says it does rather than
+	 * having been copied and half-edited.
+	 */
+	public function test_each_getter_reads_its_own_directive() {
+		$this->assertSame( ini_get( 'memory_limit' ), WP_ServerInfo_PHP::memory_limit() );
+		$this->assertSame( ini_get( 'upload_max_filesize' ), WP_ServerInfo_PHP::upload_max() );
+		$this->assertSame( ini_get( 'post_max_size' ), WP_ServerInfo_PHP::post_max() );
+		$this->assertSame( ini_get( 'max_execution_time' ), WP_ServerInfo_PHP::max_execution() );
+	}
+
+	public function test_short_tag_matches_the_running_configuration() {
+		$this->assertSame(
+			ini_get( 'short_open_tag' ) ? 'On' : 'Off',
+			WP_ServerInfo_PHP::short_tag()
+		);
+	}
+
+	/**
+	 * The summary is what the PHP tab's first table is built from, so every row
+	 * it promises has to be there -- a missing key renders as an empty cell.
+	 */
+	public function test_the_summary_holds_every_row_the_php_tab_renders() {
+		$summary = WP_ServerInfo_PHP::summary();
+
+		$this->assertSame(
+			array(
+				'PHP Version',
+				'Zend Engine Version',
+				'Server API',
+				'Loaded Configuration File',
+				'Loaded Extensions',
+			),
+			array_keys( $summary )
+		);
+
+		foreach ( $summary as $label => $value ) {
+			$this->assertIsString( $value, "{$label} must be a string the template can escape." );
+			$this->assertNotSame( '', $value, "{$label} must not be blank." );
+		}
+	}
+
+	/**
+	 * On a host built with no ini file at all php_ini_loaded_file() returns
+	 * false, and false printed into a table cell is an empty cell rather than an
+	 * answer.
+	 */
+	public function test_the_summary_never_reports_a_boolean() {
+		$summary = WP_ServerInfo_PHP::summary();
+
+		$this->assertSame(
+			php_ini_loaded_file() ? php_ini_loaded_file() : 'N/A',
+			$summary['Loaded Configuration File']
+		);
+	}
+
+	/**
+	 * The panel is built from ini_get_all() rather than by scraping phpinfo(),
+	 * which is what stops it printing environment variables and request headers.
+	 */
+	public function test_the_directive_list_comes_from_ini_get_all() {
+		$ini = WP_ServerInfo_PHP::ini_directives();
+
+		$this->assertArrayHasKey( 'memory_limit', $ini );
+		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $ini );
+		$this->assertSame( ini_get( 'memory_limit' ), $ini['memory_limit']['local_value'] );
 	}
 
 	public function test_ini_directives_are_sorted_and_shaped() {

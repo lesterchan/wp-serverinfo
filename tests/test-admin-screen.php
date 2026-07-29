@@ -12,7 +12,7 @@
 /**
  * Covers the markup, tab routing and access control of the report screen.
  */
-class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
+class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 
 	/**
 	 * Menu hook the page renders on.
@@ -31,6 +31,19 @@ class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		set_current_screen( 'tools' );
+
+		/*
+		 * The menu globals are reset first. add_submenu_page() appends to
+		 * $submenu unconditionally, and nothing in WP_UnitTestCase clears it, so
+		 * running admin_menu once per test would otherwise leave the page
+		 * registered as many times as there are tests in this class -- and the
+		 * "exactly once" assertion below would pass or fail depending on
+		 * execution order.
+		 */
+		$GLOBALS['menu']              = array();
+		$GLOBALS['submenu']           = array();
+		$GLOBALS['_registered_pages'] = array();
+		$GLOBALS['_parent_pages']     = array();
 
 		// wp-admin/menu.php is what makes a page under tools.php hook as
 		// tools_page_* rather than admin_page_*; seed just that entry.

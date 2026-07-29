@@ -2,9 +2,14 @@
 /**
  * The uninstall routine.
  *
- * The plugin stores nothing of its own, but registering a dashboard widget
- * makes WordPress record the widget id in per-user meta when someone closes,
- * hides or reorders it. That meta outlives the plugin, so uninstall clears it.
+ * There are two kinds of leftover. One is wp_serverinfo_version, the plugin's
+ * own row. The other is the per-user meta WordPress records on the plugin's
+ * behalf when somebody closes, hides or reorders the dashboard widget, which
+ * outlives the plugin unless something clears it.
+ *
+ * The include itself is not done here: uninstall.php declares functions at file
+ * scope, so only one place in the suite may require it, and that place is
+ * WP_ServerInfo_TestCase::run_uninstall(). test-metadata.php wants it too.
  *
  * @package WP-ServerInfo
  */
@@ -12,27 +17,15 @@
 /**
  * Covers the uninstall routine and the multisite loop guarding it.
  */
-class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
+class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 	/**
 	 * Absolute path to uninstall.php.
 	 *
-	 * @var string
+	 * @return string
 	 */
-	private static $uninstall_file;
-
-	public static function set_up_before_class() {
-		parent::set_up_before_class();
-
-		self::$uninstall_file = dirname( __DIR__ ) . '/uninstall.php';
-
-		// uninstall.php bails unless WordPress has declared it is uninstalling,
-		// and declares functions at file scope, so it is loaded exactly once.
-		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
-			define( 'WP_UNINSTALL_PLUGIN', 'wp-serverinfo/wp-serverinfo.php' );
-		}
-
-		require_once self::$uninstall_file;
+	private function uninstall_file() {
+		return dirname( __DIR__ ) . '/uninstall.php';
 	}
 
 	/**
@@ -43,13 +36,13 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	private function user_with_dashboard_state() {
 		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 
-		update_user_meta( $user_id, 'closedpostboxes_dashboard', array( 'dashboard_serverinfo', 'dashboard_activity' ) );
-		update_user_meta( $user_id, 'metaboxhidden_dashboard', array( 'dashboard_serverinfo' ) );
+		update_user_meta( $user_id, 'closedpostboxes_dashboard', array( WP_SERVERINFO_WIDGET_ID, 'dashboard_activity' ) );
+		update_user_meta( $user_id, 'metaboxhidden_dashboard', array( WP_SERVERINFO_WIDGET_ID ) );
 		update_user_meta(
 			$user_id,
 			'meta-box-order_dashboard',
 			array(
-				'normal' => 'dashboard_right_now,dashboard_serverinfo,dashboard_activity',
+				'normal' => 'dashboard_right_now,' . WP_SERVERINFO_WIDGET_ID . ',dashboard_activity',
 				'side'   => 'dashboard_quick_press',
 			)
 		);
@@ -60,7 +53,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	public function test_widget_is_removed_from_closed_boxes() {
 		$user_id = $this->user_with_dashboard_state();
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 
 		$this->assertSame(
 			array( 'dashboard_activity' ),
@@ -75,7 +68,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	public function test_meta_key_is_deleted_when_nothing_else_remains() {
 		$user_id = $this->user_with_dashboard_state();
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 
 		$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ) );
 	}
@@ -88,7 +81,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	public function test_widget_is_spliced_out_of_the_ordering_without_losing_others() {
 		$user_id = $this->user_with_dashboard_state();
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 
 		$this->assertSame(
 			array(
@@ -112,7 +105,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 			array( 'normal' => 'dashboard_serverinfo_extra,my_dashboard_serverinfo' )
 		);
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 
 		$this->assertSame(
 			array( 'dashboard_serverinfo_extra' ),
@@ -127,7 +120,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	public function test_users_without_dashboard_state_are_untouched() {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 
 		$this->assertSame( '', get_user_meta( $user_id, 'closedpostboxes_dashboard', true ) );
 	}
@@ -135,10 +128,10 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	public function test_running_twice_is_harmless() {
 		$user_id = $this->user_with_dashboard_state();
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 		$after_first = get_user_meta( $user_id, 'meta-box-order_dashboard', true );
 
-		wp_serverinfo_uninstall_site();
+		$this->run_uninstall();
 
 		$this->assertSame( $after_first, get_user_meta( $user_id, 'meta-box-order_dashboard', true ) );
 	}
@@ -152,7 +145,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	 * build a 101-site network to catch that, so assert on the source.
 	 */
 	public function test_multisite_loop_lifts_the_site_query_cap() {
-		$source = file_get_contents( self::$uninstall_file );
+		$source = file_get_contents( $this->uninstall_file() );
 
 		$this->assertMatchesRegularExpression( "/'number'\s*=>\s*0/", $source );
 		$this->assertMatchesRegularExpression( "/'fields'\s*=>\s*'ids'/", $source );
@@ -164,7 +157,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	 * enters the branch.
 	 */
 	public function test_multisite_loop_restores_inside_the_loop() {
-		$source = file_get_contents( self::$uninstall_file );
+		$source = file_get_contents( $this->uninstall_file() );
 
 		$this->assertMatchesRegularExpression(
 			'/switch_to_blog\(.*?wp_serverinfo_uninstall_site\(\);.*?restore_current_blog\(\);\s*\}/s',
@@ -173,19 +166,68 @@ class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 	}
 
 	public function test_uninstall_file_refuses_to_run_outside_uninstall() {
-		$source = file_get_contents( self::$uninstall_file );
+		$source = file_get_contents( $this->uninstall_file() );
 
 		$this->assertStringContainsString( "if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {", $source );
 	}
 
 	/**
 	 * The file runs with the plugin inactive, so it cannot reference the
-	 * plugin's own classes.
+	 * plugin's own classes or constants.
 	 */
 	public function test_uninstall_does_not_depend_on_plugin_classes() {
-		$source = file_get_contents( self::$uninstall_file );
+		$source = file_get_contents( $this->uninstall_file() );
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
+		$body   = preg_replace( '#//[^\n]*#', '', $body );
 
 		$this->assertDoesNotMatchRegularExpression( '/\bWP_ServerInfo(_[A-Za-z]+)?::/', $body );
+		$this->assertDoesNotMatchRegularExpression( '/\bWP_SERVERINFO_[A-Z_]+/', $body );
+	}
+
+	public function test_the_version_row_is_deleted() {
+		WP_ServerInfo_Options::maybe_upgrade();
+
+		$this->assertIsArray( get_option( WP_ServerInfo_Options::VERSION ) );
+
+		$this->run_uninstall();
+
+		$this->assertFalse( get_option( WP_ServerInfo_Options::VERSION ) );
+	}
+
+	/**
+	 * The users are walked in pages, so a site with more of them than one page
+	 * holds still gets cleaned all the way through.
+	 *
+	 * Source-level for the page size, behavioural for the walk: building 501
+	 * users to cross the real boundary would cost more than the assertion is
+	 * worth, but a bare get_users() with no paging at all is a different shape
+	 * and this catches that.
+	 */
+	public function test_the_user_walk_is_paged() {
+		$source = file_get_contents( $this->uninstall_file() );
+
+		$this->assertMatchesRegularExpression( "/'paged'\s*=>/", $source );
+		$this->assertMatchesRegularExpression( "/'number'\s*=>\s*\\\$per_page/", $source );
+
+		$user_ids = self::factory()->user->create_many( 3 );
+
+		foreach ( $user_ids as $user_id ) {
+			update_user_meta( $user_id, 'metaboxhidden_dashboard', array( WP_SERVERINFO_WIDGET_ID ) );
+		}
+
+		$this->run_uninstall();
+
+		foreach ( $user_ids as $user_id ) {
+			$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ) );
+		}
+	}
+
+	/**
+	 * Section 9 allows a phpcs suppression only in includes/, and only with a
+	 * reason. The old version of this file carried one for an unindexed meta_key
+	 * lookup; the paged walk exists so that it does not have to.
+	 */
+	public function test_the_uninstaller_suppresses_no_sniffs() {
+		$this->assertStringNotContainsString( 'phpcs:', file_get_contents( $this->uninstall_file() ) );
 	}
 }

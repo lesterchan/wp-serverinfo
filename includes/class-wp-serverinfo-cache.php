@@ -60,6 +60,10 @@ class WP_ServerInfo_Cache {
 			)
 		);
 
+		// A filter that hands back something other than an array gets the
+		// defaults rather than a TypeError from indexing a string.
+		$server = is_array( $server ) ? $server : array();
+
 		return array(
 			'host' => (string) ( $server['host'] ?? 'localhost' ),
 			'port' => (int) ( $server['port'] ?? 11211 ),
@@ -95,6 +99,10 @@ class WP_ServerInfo_Cache {
 			)
 		);
 
+		// A filter that hands back something other than an array gets the
+		// defaults rather than a TypeError from indexing a string.
+		$server = is_array( $server ) ? $server : array();
+
 		return array(
 			'host'    => (string) ( $server['host'] ?? '127.0.0.1' ),
 			'port'    => (int) ( $server['port'] ?? 6379 ),
@@ -110,6 +118,7 @@ class WP_ServerInfo_Cache {
 	public static function memcached_stats() {
 		$server = self::memcached_server();
 
+		// @codeCoverageIgnoreStart -- needs a live memcached and the extension, neither of which a test environment has.
 		if ( class_exists( 'Memcached' ) ) {
 			$memcached = new Memcached();
 			$memcached->addServer( $server['host'], $server['port'] );
@@ -129,6 +138,7 @@ class WP_ServerInfo_Cache {
 
 			return is_array( $stats ) && ! empty( $stats ) ? $stats : false;
 		}
+		// @codeCoverageIgnoreEnd
 
 		return false;
 	}
@@ -145,6 +155,7 @@ class WP_ServerInfo_Cache {
 
 		$server = self::redis_server();
 
+		// @codeCoverageIgnoreStart -- needs a live Redis and phpredis, neither of which a test environment has.
 		try {
 			$redis = new Redis();
 
@@ -168,6 +179,7 @@ class WP_ServerInfo_Cache {
 		}
 
 		return is_array( $info ) && ! empty( $info ) ? $info : false;
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**

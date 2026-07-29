@@ -8,7 +8,7 @@
 /**
  * Covers the dashboard widget's registration, access control and markup.
  */
-class WP_ServerInfo_Dashboard_Test extends WP_UnitTestCase {
+class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 	public function set_up() {
 		parent::set_up();
