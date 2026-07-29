@@ -2,14 +2,16 @@
 /**
  * Uninstall WP-ServerInfo.
  *
- * Runs with the plugin inactive, so nothing here may depend on the plugin's
- * own classes or functions being loaded.
+ * Runs with the plugin inactive, so nothing here may depend on the plugin's own
+ * classes or constants being loaded. The option name and the widget id are
+ * therefore spelled out rather than read from WP_ServerInfo_Options and
+ * WP_SERVERINFO_WIDGET_ID; tests/test-metadata.php asserts that the two copies
+ * still agree.
  *
- * WP-ServerInfo stores no options, no tables and no cron events -- everything
- * it displays is read live from the host. What it does leave behind is the
- * per-user dashboard state WordPress writes on its behalf: closing, hiding or
- * reordering the Server Information widget records its id in user meta, and
- * that meta survives the plugin being deleted.
+ * There are two kinds of leftover. One is the plugin's own option row. The other
+ * is per-user dashboard state WordPress writes on its behalf: closing, hiding or
+ * reordering the Server Information widget records its id in user meta, and that
+ * meta survives the plugin being deleted.
  *
  * @package WP-ServerInfo
  */
@@ -19,20 +21,15 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 /**
- * The dashboard widget id.
- *
- * Must match the id WP_ServerInfo_Dashboard::register_widget() passes to
- * wp_add_dashboard_widget(); that class is not loaded during uninstall.
- */
-define( 'WP_SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
-
-/**
  * Remove the widget id from a user's dashboard meta.
  *
  * @param int $user_id User ID.
  * @return void
  */
 function wp_serverinfo_clean_user_dashboard_meta( $user_id ) {
+	// Must match WP_SERVERINFO_WIDGET_ID, which is not loaded during uninstall.
+	$widget_id = 'dashboard_serverinfo';
+
 	/*
 	 * closedpostboxes_ and metaboxhidden_ hold a flat array of widget ids.
 	 * meta-box-order_ holds one comma-separated id string per column, so it
@@ -42,11 +39,11 @@ function wp_serverinfo_clean_user_dashboard_meta( $user_id ) {
 	foreach ( array( 'closedpostboxes_dashboard', 'metaboxhidden_dashboard' ) as $meta_key ) {
 		$value = get_user_meta( $user_id, $meta_key, true );
 
-		if ( ! is_array( $value ) || ! in_array( WP_SERVERINFO_WIDGET_ID, $value, true ) ) {
+		if ( ! is_array( $value ) || ! in_array( $widget_id, $value, true ) ) {
 			continue;
 		}
 
-		$value = array_values( array_diff( $value, array( WP_SERVERINFO_WIDGET_ID ) ) );
+		$value = array_values( array_diff( $value, array( $widget_id ) ) );
 
 		if ( empty( $value ) ) {
 			delete_user_meta( $user_id, $meta_key );
@@ -70,8 +67,8 @@ function wp_serverinfo_clean_user_dashboard_meta( $user_id ) {
 
 		$kept = array_filter(
 			explode( ',', $ids ),
-			function ( $id ) {
-				return WP_SERVERINFO_WIDGET_ID !== $id;
+			function ( $id ) use ( $widget_id ) {
+				return $widget_id !== $id;
 			}
 		);
 
@@ -89,48 +86,53 @@ function wp_serverinfo_clean_user_dashboard_meta( $user_id ) {
 }
 
 /**
- * Clean up the current site.
+ * Delete the plugin's rows and dashboard state for the current site.
+ *
+ * One option row only: WP-ServerInfo has nothing a site owner can configure and
+ * so stores no settings row at all (STANDARDS.md 2.1). If it ever grows one, it
+ * gets deleted here too -- tests/test-metadata.php asserts over wp_options with
+ * a LIKE rather than naming rows, so a forgotten row fails the suite.
  *
  * @return void
  */
 function wp_serverinfo_uninstall_site() {
-	$meta_keys = array(
-		'closedpostboxes_dashboard',
-		'metaboxhidden_dashboard',
-		'meta-box-order_dashboard',
-	);
+	delete_option( 'wp_serverinfo_version' );
 
-	$user_ids = array();
+	/*
+	 * The users are walked in pages rather than asked for by meta key. Querying
+	 * closedpostboxes_dashboard directly would touch only the users who actually
+	 * have dashboard state, but that is an unindexed meta_key lookup -- the one
+	 * query WordPress asks plugins not to write, and there is no way to spell it
+	 * that is not that query. Paging keeps this to a bounded number of IDs in
+	 * memory on a site with a large user table, which is what the meta filter
+	 * was really buying.
+	 */
+	$per_page = 500;
+	$paged    = 1;
 
-	foreach ( $meta_keys as $meta_key ) {
-		/*
-		 * Query by meta key so this touches only users who actually have
-		 * dashboard state, rather than every user on the site.
-		 *
-		 * No 'number' argument: unlike WP_Site_Query, WP_User_Query does not
-		 * default to a cap, so omitting it returns every match. Passing
-		 * 'number' => 0 here would return nothing.
-		 */
-		$found = get_users(
+	do {
+		$user_ids = get_users(
 			array(
-				'fields'       => 'ids',
-				'meta_key'     => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- one-time uninstall; this is how we avoid walking every user.
-				'meta_compare' => 'EXISTS',
+				'fields' => 'ids',
+				'number' => $per_page,
+				'paged'  => $paged,
 			)
 		);
 
-		$user_ids = array_merge( $user_ids, $found );
-	}
+		$found = count( $user_ids );
 
-	foreach ( array_unique( $user_ids ) as $user_id ) {
-		wp_serverinfo_clean_user_dashboard_meta( (int) $user_id );
-	}
+		foreach ( $user_ids as $user_id ) {
+			wp_serverinfo_clean_user_dashboard_meta( (int) $user_id );
+		}
+
+		++$paged;
+	} while ( $found === $per_page );
 }
 
 if ( is_multisite() ) {
 	/*
 	 * 'number' => 0 lifts WP_Site_Query's default cap of 100, which would
-	 * otherwise leave the meta behind on every site past the hundredth while
+	 * otherwise leave the rows behind on every site past the hundredth while
 	 * still reporting a successful uninstall. 'fields' => 'ids' avoids
 	 * hydrating WP_Site objects the loop never looks at.
 	 */
@@ -143,7 +145,7 @@ if ( is_multisite() ) {
 
 	foreach ( $wp_serverinfo_site_ids as $wp_serverinfo_site_id ) {
 		// switch_to_blog() pushes onto a stack, so the restore belongs inside
-		// the loop -- restoring once at the end leaves the stack unwound by one.
+		// the loop -- restoring once at the end leaves it unwound by one.
 		switch_to_blog( (int) $wp_serverinfo_site_id );
 
 		wp_serverinfo_uninstall_site();

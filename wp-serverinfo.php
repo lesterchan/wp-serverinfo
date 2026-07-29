@@ -76,6 +76,7 @@ define( 'WP_SERVERINFO_URL', plugin_dir_url( __FILE__ ) );
  */
 define( 'WP_SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
 
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-options.php';
 require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-format.php';
 require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-php.php';
 require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-mysql.php';
