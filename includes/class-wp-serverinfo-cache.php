@@ -45,13 +45,15 @@ class WP_ServerInfo_Cache {
 		 * The default is the local server on the default port. Sites whose
 		 * memcached lives on another host see an empty panel without this.
 		 *
+		 * @since 3.0.0
+		 *
 		 * @param array $server {
 		 *     @type string $host Hostname or IP. Default 'localhost'.
 		 *     @type int    $port Port number. Default 11211.
 		 * }
 		 */
 		$server = apply_filters(
-			'serverinfo_memcached_server',
+			'wp_serverinfo_memcached_server',
 			array(
 				'host' => 'localhost',
 				'port' => 11211,
@@ -73,6 +75,11 @@ class WP_ServerInfo_Cache {
 		/**
 		 * Filters the Redis server WP-ServerInfo reports on.
 		 *
+		 * The default is the local server on the default port, exactly as for
+		 * memcached above.
+		 *
+		 * @since 3.0.0
+		 *
 		 * @param array $server {
 		 *     @type string $host    Hostname, IP, or a unix:// socket path. Default '127.0.0.1'.
 		 *     @type int    $port    Port number. Use 0 for a unix socket. Default 6379.
@@ -80,7 +87,7 @@ class WP_ServerInfo_Cache {
 		 * }
 		 */
 		$server = apply_filters(
-			'serverinfo_redis_server',
+			'wp_serverinfo_redis_server',
 			array(
 				'host'    => '127.0.0.1',
 				'port'    => 6379,

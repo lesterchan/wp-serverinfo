@@ -57,7 +57,7 @@ class WP_ServerInfo_Cache_Test extends WP_UnitTestCase {
 
 	public function test_memcached_server_is_filterable() {
 		add_filter(
-			'serverinfo_memcached_server',
+			'wp_serverinfo_memcached_server',
 			function () {
 				return array(
 					'host' => 'cache.internal',
@@ -77,7 +77,7 @@ class WP_ServerInfo_Cache_Test extends WP_UnitTestCase {
 
 	public function test_redis_server_is_filterable() {
 		add_filter(
-			'serverinfo_redis_server',
+			'wp_serverinfo_redis_server',
 			function () {
 				return array(
 					'host'    => 'redis.internal',
@@ -104,7 +104,7 @@ class WP_ServerInfo_Cache_Test extends WP_UnitTestCase {
 	 */
 	public function test_partial_filter_return_falls_back_to_defaults() {
 		add_filter(
-			'serverinfo_redis_server',
+			'wp_serverinfo_redis_server',
 			function () {
 				return array( 'host' => 'redis.internal' );
 			}
