@@ -58,10 +58,12 @@ class WP_ServerInfo_MySQL_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertNotEmpty( $variables );
 
-		// property_exists() rather than assertObjectHasAttribute(), which is
-		// deprecated in PHPUnit 9.6 and gone in 10, or assertObjectHasProperty(),
-		// which only exists from 9.6.11.
-		$this->assertTrue( property_exists( $variables[0], 'Variable_name' ) );
+		// Rows come back as arrays rather than objects, so that MySQL's own
+		// CamelCase column names are keys the coding standard has no opinion
+		// about instead of property names it rejects.
+		$this->assertIsArray( $variables[0] );
+		$this->assertArrayHasKey( 'Variable_name', $variables[0] );
+		$this->assertArrayHasKey( 'Value', $variables[0] );
 	}
 
 	public function test_disk_usage_totals_are_non_negative_integers() {

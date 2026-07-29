@@ -384,9 +384,8 @@ class WP_ServerInfo_Admin {
 			foreach ( $variables as $variable ) {
 				printf(
 					"<tr><td>%s</td><td>%s</td></tr>\n",
-					// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column names from SHOW VARIABLES.
-					esc_html( $variable->Variable_name ),
-					esc_html( $variable->Value ) // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column names from SHOW VARIABLES.
+					esc_html( $variable['Variable_name'] ?? '' ),
+					esc_html( $variable['Value'] ?? '' )
 				);
 			}
 

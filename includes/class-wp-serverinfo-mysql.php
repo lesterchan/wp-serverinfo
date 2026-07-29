@@ -10,6 +10,13 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Reads the database server's own version, variables and table statistics.
  *
+ * Every row here comes back as an array rather than as an object.
+ * SHOW VARIABLES and SHOW TABLE STATUS name their columns Variable_name, Value,
+ * Data_length and so on, which are MySQL's spellings and not ours to rename, so
+ * reading them as array keys means the coding standard is not being asked to
+ * accept a property name nobody here chose. wp-dbmanager reads the same rows the
+ * same way.
+ *
  * Replaces the global get_mysql_*() functions from before 3.0.0.
  */
 class WP_ServerInfo_MySQL {
@@ -36,13 +43,13 @@ class WP_ServerInfo_MySQL {
 	/**
 	 * Get every MySQL server variable.
 	 *
-	 * @return array List of row objects with Variable_name and Value.
+	 * @return array List of rows, each with a Variable_name and a Value key.
 	 */
 	public static function variables() {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
-		return $wpdb->get_results( 'SHOW VARIABLES' );
+		return (array) $wpdb->get_results( 'SHOW VARIABLES', ARRAY_A );
 	}
 
 	/**
@@ -61,10 +68,9 @@ class WP_ServerInfo_MySQL {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection; results must not be cached.
-		$row = $wpdb->get_row( $wpdb->prepare( 'SHOW VARIABLES LIKE %s', $name ) );
+		$row = $wpdb->get_row( $wpdb->prepare( 'SHOW VARIABLES LIKE %s', $name ), ARRAY_A );
 
-		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW VARIABLES.
-		return isset( $row->Value ) ? $row->Value : null;
+		return isset( $row['Value'] ) ? $row['Value'] : null;
 	}
 
 	/**
@@ -99,14 +105,14 @@ class WP_ServerInfo_MySQL {
 	/**
 	 * Get SHOW TABLE STATUS rows, cached for the request.
 	 *
-	 * @return array List of table status row objects.
+	 * @return array List of table status rows, each keyed by column name.
 	 */
 	public static function table_status() {
 		global $wpdb;
 
 		if ( null === self::$table_status ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live server introspection, cached for the request.
-			self::$table_status = $wpdb->get_results( 'SHOW TABLE STATUS' );
+			self::$table_status = (array) $wpdb->get_results( 'SHOW TABLE STATUS', ARRAY_A );
 		}
 
 		return self::$table_status;
@@ -121,7 +127,7 @@ class WP_ServerInfo_MySQL {
 		$data_usage = 0;
 
 		foreach ( self::table_status() as $table ) {
-			$data_usage += (int) $table->Data_length; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW TABLE STATUS.
+			$data_usage += isset( $table['Data_length'] ) ? (int) $table['Data_length'] : 0;
 		}
 
 		return $data_usage;
@@ -136,7 +142,7 @@ class WP_ServerInfo_MySQL {
 		$index_usage = 0;
 
 		foreach ( self::table_status() as $table ) {
-			$index_usage += (int) $table->Index_length; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column name from SHOW TABLE STATUS.
+			$index_usage += isset( $table['Index_length'] ) ? (int) $table['Index_length'] : 0;
 		}
 
 		return $index_usage;
