@@ -1,6 +1,6 @@
 <?php
 /**
- * ServerInfo_Cache.
+ * WP_ServerInfo_Cache.
  *
  * The memcached and Redis extensions are not installed in the test container,
  * so the connection paths cannot be exercised here. What can be -- and what
@@ -15,7 +15,7 @@
 /**
  * Covers cache server resolution and the filters that drive it.
  */
-class Test_ServerInfo_Cache extends WP_UnitTestCase {
+class WP_ServerInfo_Cache_Test extends WP_UnitTestCase {
 
 	/**
 	 * Call one of the private server-resolution methods.
@@ -28,7 +28,7 @@ class Test_ServerInfo_Cache extends WP_UnitTestCase {
 	 * @return array
 	 */
 	private function resolve( $method ) {
-		$reflection = new ReflectionMethod( ServerInfo_Cache::class, $method );
+		$reflection = new ReflectionMethod( WP_ServerInfo_Cache::class, $method );
 		$reflection->setAccessible( true );
 
 		return $reflection->invoke( null );
@@ -123,17 +123,17 @@ class Test_ServerInfo_Cache extends WP_UnitTestCase {
 	public function test_extension_detection_matches_the_loaded_classes() {
 		$this->assertSame(
 			class_exists( 'Memcached' ) || class_exists( 'Memcache' ),
-			ServerInfo_Cache::has_memcached()
+			WP_ServerInfo_Cache::has_memcached()
 		);
-		$this->assertSame( class_exists( 'Redis' ), ServerInfo_Cache::has_redis() );
+		$this->assertSame( class_exists( 'Redis' ), WP_ServerInfo_Cache::has_redis() );
 	}
 
 	public function test_stats_return_false_when_the_extension_is_missing() {
-		if ( ServerInfo_Cache::has_redis() ) {
+		if ( WP_ServerInfo_Cache::has_redis() ) {
 			$this->markTestSkipped( 'The Redis extension is installed in this environment.' );
 		}
 
-		$this->assertFalse( ServerInfo_Cache::redis_stats() );
+		$this->assertFalse( WP_ServerInfo_Cache::redis_stats() );
 	}
 
 	/**
@@ -143,7 +143,7 @@ class Test_ServerInfo_Cache extends WP_UnitTestCase {
 	 * @param int|float $expected Expected hit ratio.
 	 */
 	public function test_redis_hit_ratio( $info, $expected ) {
-		$this->assertSame( $expected, ServerInfo_Cache::redis_hit_ratio( $info ) );
+		$this->assertSame( $expected, WP_ServerInfo_Cache::redis_hit_ratio( $info ) );
 	}
 
 	public function data_hit_ratios() {

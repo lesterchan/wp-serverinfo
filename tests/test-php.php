@@ -1,6 +1,6 @@
 <?php
 /**
- * ServerInfo_PHP.
+ * WP_ServerInfo_PHP.
  *
  * The environment probes. Several of these guard bugs where a perfectly
  * ordinary value was mistaken for a missing one.
@@ -11,7 +11,7 @@
 /**
  * Covers the PHP and host environment probes.
  */
-class Test_ServerInfo_PHP extends WP_UnitTestCase {
+class WP_ServerInfo_PHP_Test extends WP_UnitTestCase {
 
 	/**
 	 * $_SERVER keys these tests overwrite, restored in tear_down.
@@ -51,28 +51,28 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 			$this->markTestSkipped( 'max_execution_time is not settable in this SAPI.' );
 		}
 
-		$this->assertSame( '0', ServerInfo_PHP::max_execution() );
-		$this->assertStringNotContainsString( 'N/A', ServerInfo_PHP::max_execution() );
+		$this->assertSame( '0', WP_ServerInfo_PHP::max_execution() );
+		$this->assertStringNotContainsString( 'N/A', WP_ServerInfo_PHP::max_execution() );
 
 		set_time_limit( $original );
 	}
 
 	public function test_unset_directive_reports_na() {
-		$this->assertSame( 'N/A', ServerInfo_PHP::ini_value( 'wp_serverinfo_no_such_directive' ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'wp_serverinfo_no_such_directive' ) );
 	}
 
 	public function test_known_directives_are_reported() {
-		$this->assertNotSame( 'N/A', ServerInfo_PHP::memory_limit() );
-		$this->assertNotSame( 'N/A', ServerInfo_PHP::upload_max() );
-		$this->assertNotSame( 'N/A', ServerInfo_PHP::post_max() );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::memory_limit() );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::upload_max() );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::post_max() );
 	}
 
 	public function test_short_tag_is_a_localized_on_or_off() {
-		$this->assertContains( ServerInfo_PHP::short_tag(), array( 'On', 'Off' ) );
+		$this->assertContains( WP_ServerInfo_PHP::short_tag(), array( 'On', 'Off' ) );
 	}
 
 	public function test_gd_version_is_reported_or_na() {
-		$gd = ServerInfo_PHP::gd_version();
+		$gd = WP_ServerInfo_PHP::gd_version();
 
 		$this->assertNotEmpty( $gd );
 
@@ -91,7 +91,7 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 	 * and the GD version come from the same extension.
 	 */
 	public function test_gd_probe_does_not_scrape_phpinfo() {
-		$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-serverinfo-php.php' );
+		$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wp-serverinfo-php.php' );
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
 
 		$this->assertStringNotContainsString( 'phpinfo(', $body );
@@ -100,7 +100,7 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 	public function test_server_value_is_sanitized_and_unslashed() {
 		$_SERVER['SERVER_SOFTWARE'] = 'nginx\\/1.25 <b>x</b>';
 
-		$value = ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' );
+		$value = WP_ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' );
 
 		$this->assertStringNotContainsString( '<b>', $value );
 		$this->assertStringNotContainsString( '\\/', $value );
@@ -109,7 +109,7 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 	public function test_missing_server_key_is_an_empty_string() {
 		unset( $_SERVER['SERVER_SOFTWARE'] );
 
-		$this->assertSame( '', ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ) );
+		$this->assertSame( '', WP_ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ) );
 	}
 
 	public function test_server_address_reads_server_addr_by_default() {
@@ -118,7 +118,7 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 		$_SERVER['SERVER_ADDR'] = '10.0.0.5';
 		$_SERVER['LOCAL_ADDR']  = '192.168.1.1';
 
-		$this->assertSame( '10.0.0.5', ServerInfo_PHP::server_address() );
+		$this->assertSame( '10.0.0.5', WP_ServerInfo_PHP::server_address() );
 	}
 
 	/**
@@ -132,13 +132,13 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 		$_SERVER['SERVER_ADDR'] = '';
 		$_SERVER['LOCAL_ADDR']  = '192.168.1.1';
 
-		$this->assertSame( '192.168.1.1', ServerInfo_PHP::server_address() );
+		$this->assertSame( '192.168.1.1', WP_ServerInfo_PHP::server_address() );
 
 		$GLOBALS['is_IIS'] = false;
 	}
 
 	public function test_server_load_is_a_number_or_na() {
-		$load = ServerInfo_PHP::server_load();
+		$load = WP_ServerInfo_PHP::server_load();
 
 		if ( 'N/A' !== $load ) {
 			$this->assertIsNumeric( $load );
@@ -155,21 +155,21 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 	 */
 	public function test_server_load_never_emits_output() {
 		ob_start();
-		ServerInfo_PHP::server_load();
+		WP_ServerInfo_PHP::server_load();
 		$printed = ob_get_clean();
 
 		$this->assertSame( '', $printed );
 	}
 
 	public function test_server_load_does_not_shell_out_via_system() {
-		$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-serverinfo-php.php' );
+		$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wp-serverinfo-php.php' );
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
 
 		$this->assertDoesNotMatchRegularExpression( '/(?<![a-z_])system\s*\(/', $body );
 	}
 
 	public function test_summary_reports_the_running_interpreter() {
-		$summary = ServerInfo_PHP::summary();
+		$summary = WP_ServerInfo_PHP::summary();
 
 		$this->assertSame( phpversion(), $summary['PHP Version'] );
 		$this->assertSame( php_sapi_name(), $summary['Server API'] );
@@ -177,7 +177,7 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 	}
 
 	public function test_ini_directives_are_sorted_and_shaped() {
-		$ini = ServerInfo_PHP::ini_directives();
+		$ini = WP_ServerInfo_PHP::ini_directives();
 
 		$this->assertNotEmpty( $ini );
 

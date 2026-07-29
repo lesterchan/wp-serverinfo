@@ -1,6 +1,6 @@
 <?php
 /**
- * ServerInfo_MySQL.
+ * WP_ServerInfo_MySQL.
  *
  * These run against the real MySQL server wp-env brings up, which is the
  * point: the null-row bug they guard against only appears when a variable is
@@ -12,7 +12,7 @@
 /**
  * Covers MySQL server introspection against a real database.
  */
-class Test_ServerInfo_MySQL extends WP_UnitTestCase {
+class WP_ServerInfo_MySQL_Test extends WP_UnitTestCase {
 
 	/**
 	 * SHOW VARIABLES LIKE returns no row for a variable that does not exist,
@@ -22,16 +22,16 @@ class Test_ServerInfo_MySQL extends WP_UnitTestCase {
 	 * fired on any modern server.
 	 */
 	public function test_absent_variable_returns_null_without_warning() {
-		$this->assertNull( ServerInfo_MySQL::variable( 'wp_serverinfo_no_such_variable' ) );
+		$this->assertNull( WP_ServerInfo_MySQL::variable( 'wp_serverinfo_no_such_variable' ) );
 	}
 
 	public function test_known_variable_returns_its_value() {
-		$this->assertNotNull( ServerInfo_MySQL::variable( 'max_connections' ) );
-		$this->assertIsNumeric( ServerInfo_MySQL::max_connections() );
+		$this->assertNotNull( WP_ServerInfo_MySQL::variable( 'max_connections' ) );
+		$this->assertIsNumeric( WP_ServerInfo_MySQL::max_connections() );
 	}
 
 	public function test_max_allowed_packet_is_numeric() {
-		$this->assertIsNumeric( ServerInfo_MySQL::max_allowed_packet() );
+		$this->assertIsNumeric( WP_ServerInfo_MySQL::max_allowed_packet() );
 	}
 
 	/**
@@ -40,7 +40,7 @@ class Test_ServerInfo_MySQL extends WP_UnitTestCase {
 	 * answers safely either way.
 	 */
 	public function test_query_cache_size_is_numeric_or_null() {
-		$value = ServerInfo_MySQL::query_cache_size();
+		$value = WP_ServerInfo_MySQL::query_cache_size();
 
 		if ( null !== $value ) {
 			$this->assertIsNumeric( $value );
@@ -50,11 +50,11 @@ class Test_ServerInfo_MySQL extends WP_UnitTestCase {
 	}
 
 	public function test_version_is_reported() {
-		$this->assertNotEmpty( ServerInfo_MySQL::version() );
+		$this->assertNotEmpty( WP_ServerInfo_MySQL::version() );
 	}
 
 	public function test_variables_listing_is_not_empty() {
-		$variables = ServerInfo_MySQL::variables();
+		$variables = WP_ServerInfo_MySQL::variables();
 
 		$this->assertNotEmpty( $variables );
 
@@ -65,10 +65,10 @@ class Test_ServerInfo_MySQL extends WP_UnitTestCase {
 	}
 
 	public function test_disk_usage_totals_are_non_negative_integers() {
-		$this->assertIsInt( ServerInfo_MySQL::data_usage() );
-		$this->assertIsInt( ServerInfo_MySQL::index_usage() );
-		$this->assertGreaterThanOrEqual( 0, ServerInfo_MySQL::data_usage() );
-		$this->assertGreaterThanOrEqual( 0, ServerInfo_MySQL::index_usage() );
+		$this->assertIsInt( WP_ServerInfo_MySQL::data_usage() );
+		$this->assertIsInt( WP_ServerInfo_MySQL::index_usage() );
+		$this->assertGreaterThanOrEqual( 0, WP_ServerInfo_MySQL::data_usage() );
+		$this->assertGreaterThanOrEqual( 0, WP_ServerInfo_MySQL::index_usage() );
 	}
 
 	/**
@@ -78,12 +78,12 @@ class Test_ServerInfo_MySQL extends WP_UnitTestCase {
 	public function test_table_status_is_queried_once_per_request() {
 		global $wpdb;
 
-		ServerInfo_MySQL::table_status();
+		WP_ServerInfo_MySQL::table_status();
 
 		$before = $wpdb->num_queries;
-		ServerInfo_MySQL::data_usage();
-		ServerInfo_MySQL::index_usage();
-		ServerInfo_MySQL::table_status();
+		WP_ServerInfo_MySQL::data_usage();
+		WP_ServerInfo_MySQL::index_usage();
+		WP_ServerInfo_MySQL::table_status();
 
 		$this->assertSame( $before, $wpdb->num_queries );
 	}

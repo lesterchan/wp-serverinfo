@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Replaces the global wp_dashboard_serverinfo() function from before 3.0.0.
  */
-class ServerInfo_Dashboard {
+class WP_ServerInfo_Dashboard {
 
 	/**
 	 * Register the widget for administrators.
@@ -23,12 +23,12 @@ class ServerInfo_Dashboard {
 	 * @return void
 	 */
 	public static function register_widget() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( WP_ServerInfo_Admin::CAPABILITY ) ) {
 			return;
 		}
 
 		wp_add_dashboard_widget(
-			'dashboard_serverinfo',
+			WP_SERVERINFO_WIDGET_ID,
 			__( 'Server Information', 'wp-serverinfo' ),
 			array( self::class, 'render' )
 		);
@@ -90,10 +90,10 @@ class ServerInfo_Dashboard {
 			__( 'General', 'wp-serverinfo' ),
 			array(
 				array( __( 'OS', 'wp-serverinfo' ), PHP_OS ),
-				array( __( 'Server', 'wp-serverinfo' ), ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ) ),
-				array( __( 'Hostname', 'wp-serverinfo' ), ServerInfo_PHP::server_value( 'SERVER_NAME' ) ),
-				array( __( 'IP:Port', 'wp-serverinfo' ), ServerInfo_PHP::server_address() . ':' . ServerInfo_PHP::server_value( 'SERVER_PORT' ) ),
-				array( __( 'Document Root', 'wp-serverinfo' ), ServerInfo_PHP::server_value( 'DOCUMENT_ROOT' ) ),
+				array( __( 'Server', 'wp-serverinfo' ), WP_ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ) ),
+				array( __( 'Hostname', 'wp-serverinfo' ), WP_ServerInfo_PHP::server_value( 'SERVER_NAME' ) ),
+				array( __( 'IP:Port', 'wp-serverinfo' ), WP_ServerInfo_PHP::server_address() . ':' . WP_ServerInfo_PHP::server_value( 'SERVER_PORT' ) ),
+				array( __( 'Document Root', 'wp-serverinfo' ), WP_ServerInfo_PHP::server_value( 'DOCUMENT_ROOT' ) ),
 			)
 		);
 
@@ -101,27 +101,27 @@ class ServerInfo_Dashboard {
 			'PHP',
 			array(
 				array( '', PHP_VERSION, 'v' ),
-				array( 'GD', ServerInfo_PHP::gd_version() ),
-				array( __( 'Memory Limit', 'wp-serverinfo' ), ServerInfo_Format::php_size( ServerInfo_PHP::memory_limit() ) ),
-				array( __( 'Max Script Execute Time', 'wp-serverinfo' ), ServerInfo_PHP::max_execution() . 's' ),
-				array( __( 'Max Post Size', 'wp-serverinfo' ), ServerInfo_Format::php_size( ServerInfo_PHP::post_max() ) ),
-				array( __( 'Max Upload Size', 'wp-serverinfo' ), ServerInfo_Format::php_size( ServerInfo_PHP::upload_max() ) ),
+				array( 'GD', WP_ServerInfo_PHP::gd_version() ),
+				array( __( 'Memory Limit', 'wp-serverinfo' ), WP_ServerInfo_Format::php_size( WP_ServerInfo_PHP::memory_limit() ) ),
+				array( __( 'Max Script Execute Time', 'wp-serverinfo' ), WP_ServerInfo_PHP::max_execution() . 's' ),
+				array( __( 'Max Post Size', 'wp-serverinfo' ), WP_ServerInfo_Format::php_size( WP_ServerInfo_PHP::post_max() ) ),
+				array( __( 'Max Upload Size', 'wp-serverinfo' ), WP_ServerInfo_Format::php_size( WP_ServerInfo_PHP::upload_max() ) ),
 			)
 		);
 
 		self::render_section(
 			'MYSQL',
 			array(
-				array( '', ServerInfo_MySQL::version(), 'v' ),
-				array( __( 'Maximum No. Connections', 'wp-serverinfo' ), ServerInfo_Format::number( ServerInfo_MySQL::max_connections() ) ),
-				array( __( 'Maximum Packet Size', 'wp-serverinfo' ), ServerInfo_Format::filesize( ServerInfo_MySQL::max_allowed_packet() ) ),
-				array( __( 'Data Disk Usage', 'wp-serverinfo' ), ServerInfo_Format::filesize( ServerInfo_MySQL::data_usage() ) ),
-				array( __( 'Index Disk Usage', 'wp-serverinfo' ), ServerInfo_Format::filesize( ServerInfo_MySQL::index_usage() ) ),
+				array( '', WP_ServerInfo_MySQL::version(), 'v' ),
+				array( __( 'Maximum No. Connections', 'wp-serverinfo' ), WP_ServerInfo_Format::number( WP_ServerInfo_MySQL::max_connections() ) ),
+				array( __( 'Maximum Packet Size', 'wp-serverinfo' ), WP_ServerInfo_Format::filesize( WP_ServerInfo_MySQL::max_allowed_packet() ) ),
+				array( __( 'Data Disk Usage', 'wp-serverinfo' ), WP_ServerInfo_Format::filesize( WP_ServerInfo_MySQL::data_usage() ) ),
+				array( __( 'Index Disk Usage', 'wp-serverinfo' ), WP_ServerInfo_Format::filesize( WP_ServerInfo_MySQL::index_usage() ) ),
 			)
 		);
 
-		if ( ServerInfo_Cache::has_redis() ) {
-			$redis = ServerInfo_Cache::redis_stats();
+		if ( WP_ServerInfo_Cache::has_redis() ) {
+			$redis = WP_ServerInfo_Cache::redis_stats();
 
 			if ( $redis ) {
 				self::render_section(
@@ -136,9 +136,9 @@ class ServerInfo_Dashboard {
 								number_format_i18n( $redis['uptime_in_days'] ?? 0 )
 							),
 						),
-						array( __( 'Used Memory', 'wp-serverinfo' ), $redis['used_memory_human'] ?? ServerInfo_Format::filesize( $redis['used_memory'] ?? 0 ) ),
+						array( __( 'Used Memory', 'wp-serverinfo' ), $redis['used_memory_human'] ?? WP_ServerInfo_Format::filesize( $redis['used_memory'] ?? 0 ) ),
 						array( __( 'Connected Clients', 'wp-serverinfo' ), number_format_i18n( $redis['connected_clients'] ?? 0 ) ),
-						array( __( 'Hit Ratio', 'wp-serverinfo' ), ServerInfo_Cache::redis_hit_ratio( $redis ) . '%' ),
+						array( __( 'Hit Ratio', 'wp-serverinfo' ), WP_ServerInfo_Cache::redis_hit_ratio( $redis ) . '%' ),
 					)
 				);
 			}
@@ -146,7 +146,7 @@ class ServerInfo_Dashboard {
 
 		printf(
 			"<p class=\"textright\"><a href=\"%s\" class=\"button\">%s</a></p>\n",
-			esc_url( admin_url( 'index.php?page=' . ServerInfo_Admin::SLUG ) ),
+			esc_url( admin_url( 'index.php?page=' . WP_ServerInfo_Admin::PAGE ) ),
 			esc_html__( 'View all', 'wp-serverinfo' )
 		);
 

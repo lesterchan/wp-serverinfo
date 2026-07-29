@@ -14,19 +14,19 @@ defined( 'ABSPATH' ) || exit;
  * no activation, upgrade or uninstall path to run. Everything it displays is
  * read live from the host on each render, which is the whole point of it.
  */
-class ServerInfo {
+class WP_ServerInfo {
 
 	/**
 	 * Sole instance.
 	 *
-	 * @var ServerInfo|null
+	 * @var WP_ServerInfo|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get the sole instance, creating it on first call.
 	 *
-	 * @return ServerInfo
+	 * @return WP_ServerInfo
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -40,7 +40,7 @@ class ServerInfo {
 	 * Register hooks.
 	 */
 	private function __construct() {
-		add_action( 'admin_menu', array( ServerInfo_Admin::class, 'register_menu' ) );
-		add_action( 'wp_dashboard_setup', array( ServerInfo_Dashboard::class, 'register_widget' ) );
+		add_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'register_menu' ) );
+		add_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) );
 	}
 }

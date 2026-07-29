@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  * WP-ServerInfo could end up rendering its sizes with another plugin's text
  * domain.
  */
-class ServerInfo_Format {
+class WP_ServerInfo_Format {
 
 	/**
 	 * Format a byte count into a localized TiB/GiB/MiB/KiB/bytes string.

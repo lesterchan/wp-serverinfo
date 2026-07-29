@@ -9,7 +9,7 @@
  * Covers the main file's contract: constants, hook wiring and the rule that
  * the main file holds no logic.
  */
-class Test_ServerInfo_Plugin extends WP_UnitTestCase {
+class WP_ServerInfo_Plugin_Test extends WP_UnitTestCase {
 
 	/**
 	 * Read the main plugin file.
@@ -44,13 +44,13 @@ class Test_ServerInfo_Plugin extends WP_UnitTestCase {
 	public function test_every_class_is_loaded() {
 		foreach (
 			array(
-				'ServerInfo',
-				'ServerInfo_Admin',
-				'ServerInfo_Cache',
-				'ServerInfo_Dashboard',
-				'ServerInfo_Format',
-				'ServerInfo_MySQL',
-				'ServerInfo_PHP',
+				'WP_ServerInfo',
+				'WP_ServerInfo_Admin',
+				'WP_ServerInfo_Cache',
+				'WP_ServerInfo_Dashboard',
+				'WP_ServerInfo_Format',
+				'WP_ServerInfo_MySQL',
+				'WP_ServerInfo_PHP',
 			) as $class
 		) {
 			$this->assertTrue( class_exists( $class ), "$class was not loaded." );
@@ -58,15 +58,15 @@ class Test_ServerInfo_Plugin extends WP_UnitTestCase {
 	}
 
 	public function test_get_instance_returns_the_same_object() {
-		$this->assertSame( ServerInfo::get_instance(), ServerInfo::get_instance() );
+		$this->assertSame( WP_ServerInfo::get_instance(), WP_ServerInfo::get_instance() );
 	}
 
 	public function test_the_two_admin_surfaces_are_hooked() {
 		$this->assertNotFalse(
-			has_action( 'admin_menu', array( ServerInfo_Admin::class, 'register_menu' ) )
+			has_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'register_menu' ) )
 		);
 		$this->assertNotFalse(
-			has_action( 'wp_dashboard_setup', array( ServerInfo_Dashboard::class, 'register_widget' ) )
+			has_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) )
 		);
 	}
 
@@ -118,7 +118,7 @@ class Test_ServerInfo_Plugin extends WP_UnitTestCase {
 	public function test_plugin_declares_its_floors() {
 		$source = $this->main_file();
 
-		$this->assertMatchesRegularExpression( '/^ \* Requires at least: 6\.0$/m', $source );
-		$this->assertMatchesRegularExpression( '/^ \* Requires PHP: 7\.4$/m', $source );
+		$this->assertMatchesRegularExpression( '/^ \* Requires at least: 6\.8$/m', $source );
+		$this->assertMatchesRegularExpression( '/^ \* Requires PHP: 8\.2$/m', $source );
 	}
 }

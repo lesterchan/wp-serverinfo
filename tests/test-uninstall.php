@@ -12,7 +12,7 @@
 /**
  * Covers the uninstall routine and the multisite loop guarding it.
  */
-class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
+class WP_ServerInfo_Uninstall_Test extends WP_UnitTestCase {
 
 	/**
 	 * Absolute path to uninstall.php.
@@ -60,7 +60,7 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 	public function test_widget_is_removed_from_closed_boxes() {
 		$user_id = $this->user_with_dashboard_state();
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		$this->assertSame(
 			array( 'dashboard_activity' ),
@@ -75,7 +75,7 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 	public function test_meta_key_is_deleted_when_nothing_else_remains() {
 		$user_id = $this->user_with_dashboard_state();
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ) );
 	}
@@ -88,7 +88,7 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 	public function test_widget_is_spliced_out_of_the_ordering_without_losing_others() {
 		$user_id = $this->user_with_dashboard_state();
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		$this->assertSame(
 			array(
@@ -112,7 +112,7 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 			array( 'normal' => 'dashboard_serverinfo_extra,my_dashboard_serverinfo' )
 		);
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		$this->assertSame(
 			array( 'dashboard_serverinfo_extra' ),
@@ -127,7 +127,7 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 	public function test_users_without_dashboard_state_are_untouched() {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		$this->assertSame( '', get_user_meta( $user_id, 'closedpostboxes_dashboard', true ) );
 	}
@@ -135,10 +135,10 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 	public function test_running_twice_is_harmless() {
 		$user_id = $this->user_with_dashboard_state();
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 		$after_first = get_user_meta( $user_id, 'meta-box-order_dashboard', true );
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		$this->assertSame( $after_first, get_user_meta( $user_id, 'meta-box-order_dashboard', true ) );
 	}
@@ -167,7 +167,7 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 		$source = file_get_contents( self::$uninstall_file );
 
 		$this->assertMatchesRegularExpression(
-			'/switch_to_blog\(.*?serverinfo_uninstall_site\(\);.*?restore_current_blog\(\);\s*\}/s',
+			'/switch_to_blog\(.*?wp_serverinfo_uninstall_site\(\);.*?restore_current_blog\(\);\s*\}/s',
 			$source
 		);
 	}
@@ -186,6 +186,6 @@ class Test_ServerInfo_Uninstall extends WP_UnitTestCase {
 		$source = file_get_contents( self::$uninstall_file );
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
 
-		$this->assertDoesNotMatchRegularExpression( '/\bServerInfo(_[A-Za-z]+)?::/', $body );
+		$this->assertDoesNotMatchRegularExpression( '/\bWP_ServerInfo(_[A-Za-z]+)?::/', $body );
 	}
 }

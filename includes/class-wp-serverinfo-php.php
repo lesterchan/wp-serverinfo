@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
  * Replaces the global get_php_*() / get_gd_version() / get_serverload()
  * functions from before 3.0.0.
  */
-class ServerInfo_PHP {
+class WP_ServerInfo_PHP {
 
 	/**
 	 * Read an ini directive, distinguishing "unset" from a falsy value.

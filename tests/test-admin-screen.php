@@ -12,7 +12,7 @@
 /**
  * Covers the markup, tab routing and access control of the admin screen.
  */
-class Test_ServerInfo_Admin_Screen extends WP_UnitTestCase {
+class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 
 	/**
 	 * Menu hook the submenu page renders on.
@@ -160,11 +160,11 @@ class Test_ServerInfo_Admin_Screen extends WP_UnitTestCase {
 		$html = $this->render( 'general' );
 
 		$this->assertSame(
-			ServerInfo_Cache::has_memcached(),
+			WP_ServerInfo_Cache::has_memcached(),
 			false !== strpos( $html, 'tab=memcached' )
 		);
 		$this->assertSame(
-			ServerInfo_Cache::has_redis(),
+			WP_ServerInfo_Cache::has_redis(),
 			false !== strpos( $html, 'tab=redis' )
 		);
 	}

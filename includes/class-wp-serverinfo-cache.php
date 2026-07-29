@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
  * Replaces the global serverinfo_has_memcached() / serverinfo_get_*_stats()
  * functions from before 3.0.0.
  */
-class ServerInfo_Cache {
+class WP_ServerInfo_Cache {
 
 	/**
 	 * Determine whether a memcached PHP extension is available.

@@ -37,21 +37,51 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * WP-ServerInfo version.
+ * WP-ServerInfo version. The last-run value is kept in the wp_serverinfo_version row.
  */
 define( 'WP_SERVERINFO_VERSION', '3.0.0' );
+
+/**
+ * Schema counter. Bumped only when the stored rows need reshaping.
+ */
+define( 'WP_SERVERINFO_DB_VERSION', '1' );
+
+/**
+ * WP-ServerInfo slug, which is also the text domain.
+ */
+define( 'WP_SERVERINFO_SLUG', 'wp-serverinfo' );
 
 /**
  * WP-ServerInfo main file.
  */
 define( 'WP_SERVERINFO_MAIN_FILE', __FILE__ );
 
-require_once __DIR__ . '/includes/class-serverinfo-format.php';
-require_once __DIR__ . '/includes/class-serverinfo-php.php';
-require_once __DIR__ . '/includes/class-serverinfo-mysql.php';
-require_once __DIR__ . '/includes/class-serverinfo-cache.php';
-require_once __DIR__ . '/includes/class-serverinfo-admin.php';
-require_once __DIR__ . '/includes/class-serverinfo-dashboard.php';
-require_once __DIR__ . '/includes/class-serverinfo.php';
+/**
+ * WP-ServerInfo directory, with a trailing slash.
+ */
+define( 'WP_SERVERINFO_DIR', plugin_dir_path( __FILE__ ) );
 
-ServerInfo::get_instance();
+/**
+ * WP-ServerInfo URL, with a trailing slash.
+ */
+define( 'WP_SERVERINFO_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * The Dashboard widget's id.
+ *
+ * WordPress records this string in per-user meta the moment somebody closes,
+ * hides or reorders the widget, so it is part of what the plugin leaves in the
+ * database and uninstall.php has to know it too. It is spelled out there rather
+ * than read from here, because uninstall runs with the plugin inactive.
+ */
+define( 'WP_SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
+
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-format.php';
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-php.php';
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-mysql.php';
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-cache.php';
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-admin.php';
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-dashboard.php';
+require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo.php';
+
+WP_ServerInfo::get_instance();

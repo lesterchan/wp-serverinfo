@@ -1,6 +1,6 @@
 <?php
 /**
- * ServerInfo_Format.
+ * WP_ServerInfo_Format.
  *
  * Every case here is a bug that shipped in 2.0.0 and earlier. They were found
  * by rendering the dashboard widget under a range of ini values and reading
@@ -13,14 +13,14 @@
 /**
  * Covers size and count formatting.
  */
-class Test_ServerInfo_Format extends WP_UnitTestCase {
+class WP_ServerInfo_Format_Test extends WP_UnitTestCase {
 
 	public function test_bytes_below_a_kibibyte_render_as_bytes() {
-		$this->assertSame( '512 bytes', ServerInfo_Format::filesize( 512 ) );
+		$this->assertSame( '512 bytes', WP_ServerInfo_Format::filesize( 512 ) );
 	}
 
 	public function test_zero_renders_as_bytes_rather_than_unknown() {
-		$this->assertSame( '0 bytes', ServerInfo_Format::filesize( 0 ) );
+		$this->assertSame( '0 bytes', WP_ServerInfo_Format::filesize( 0 ) );
 	}
 
 	/**
@@ -34,7 +34,7 @@ class Test_ServerInfo_Format extends WP_UnitTestCase {
 	 * @param string $expected Expected rendering.
 	 */
 	public function test_exact_unit_boundary_uses_that_unit( $bytes, $expected ) {
-		$this->assertSame( $expected, ServerInfo_Format::filesize( $bytes ) );
+		$this->assertSame( $expected, WP_ServerInfo_Format::filesize( $bytes ) );
 	}
 
 	public function data_unit_boundaries() {
@@ -47,9 +47,9 @@ class Test_ServerInfo_Format extends WP_UnitTestCase {
 	}
 
 	public function test_negative_and_non_numeric_sizes_are_unknown() {
-		$this->assertSame( 'unknown', ServerInfo_Format::filesize( -1 ) );
-		$this->assertSame( 'unknown', ServerInfo_Format::filesize( 'not a size' ) );
-		$this->assertSame( 'unknown', ServerInfo_Format::filesize( null ) );
+		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( -1 ) );
+		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( 'not a size' ) );
+		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( null ) );
 	}
 
 	/**
@@ -63,7 +63,7 @@ class Test_ServerInfo_Format extends WP_UnitTestCase {
 	 * @param string $expected Expected rendering.
 	 */
 	public function test_shorthand_sizes_parse_in_either_case( $value, $expected ) {
-		$this->assertSame( $expected, ServerInfo_Format::php_size( $value ) );
+		$this->assertSame( $expected, WP_ServerInfo_Format::php_size( $value ) );
 	}
 
 	public function data_shorthand_sizes() {
@@ -83,16 +83,16 @@ class Test_ServerInfo_Format extends WP_UnitTestCase {
 	 * fall through the formatter and render as "unknown".
 	 */
 	public function test_unlimited_memory_limit_is_labelled_not_unknown() {
-		$this->assertSame( 'Unlimited', ServerInfo_Format::php_size( '-1' ) );
-		$this->assertSame( 'Unlimited', ServerInfo_Format::php_size( -1 ) );
+		$this->assertSame( 'Unlimited', WP_ServerInfo_Format::php_size( '-1' ) );
+		$this->assertSame( 'Unlimited', WP_ServerInfo_Format::php_size( -1 ) );
 	}
 
 	public function test_unparseable_php_size_is_returned_verbatim() {
-		$this->assertSame( 'nonsense', ServerInfo_Format::php_size( 'nonsense' ) );
+		$this->assertSame( 'nonsense', WP_ServerInfo_Format::php_size( 'nonsense' ) );
 	}
 
 	public function test_surrounding_whitespace_is_ignored() {
-		$this->assertSame( '128.0 MiB', ServerInfo_Format::php_size( ' 128M ' ) );
+		$this->assertSame( '128.0 MiB', WP_ServerInfo_Format::php_size( ' 128M ' ) );
 	}
 
 	/**
@@ -100,13 +100,13 @@ class Test_ServerInfo_Format extends WP_UnitTestCase {
 	 * straight to number_format_i18n() deprecates on PHP 8.1+.
 	 */
 	public function test_number_falls_back_to_na_for_unavailable_values() {
-		$this->assertSame( 'N/A', ServerInfo_Format::number( null ) );
-		$this->assertSame( 'N/A', ServerInfo_Format::number( '' ) );
-		$this->assertSame( 'N/A', ServerInfo_Format::number( 'unknown' ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( null ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( '' ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( 'unknown' ) );
 	}
 
 	public function test_number_localizes_numeric_values() {
-		$this->assertSame( '1,024', ServerInfo_Format::number( 1024 ) );
-		$this->assertSame( '151', ServerInfo_Format::number( '151' ) );
+		$this->assertSame( '1,024', WP_ServerInfo_Format::number( 1024 ) );
+		$this->assertSame( '151', WP_ServerInfo_Format::number( '151' ) );
 	}
 }

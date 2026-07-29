@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Replaces the global get_mysql_*() functions from before 3.0.0.
  */
-class ServerInfo_MySQL {
+class WP_ServerInfo_MySQL {
 
 	/**
 	 * Cached SHOW TABLE STATUS rows for this request.

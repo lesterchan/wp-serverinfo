@@ -21,10 +21,10 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 /**
  * The dashboard widget id.
  *
- * Must match the id ServerInfo_Dashboard::register_widget() passes to
+ * Must match the id WP_ServerInfo_Dashboard::register_widget() passes to
  * wp_add_dashboard_widget(); that class is not loaded during uninstall.
  */
-define( 'SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
+define( 'WP_SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
 
 /**
  * Remove the widget id from a user's dashboard meta.
@@ -32,7 +32,7 @@ define( 'SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
  * @param int $user_id User ID.
  * @return void
  */
-function serverinfo_clean_user_dashboard_meta( $user_id ) {
+function wp_serverinfo_clean_user_dashboard_meta( $user_id ) {
 	/*
 	 * closedpostboxes_ and metaboxhidden_ hold a flat array of widget ids.
 	 * meta-box-order_ holds one comma-separated id string per column, so it
@@ -42,11 +42,11 @@ function serverinfo_clean_user_dashboard_meta( $user_id ) {
 	foreach ( array( 'closedpostboxes_dashboard', 'metaboxhidden_dashboard' ) as $meta_key ) {
 		$value = get_user_meta( $user_id, $meta_key, true );
 
-		if ( ! is_array( $value ) || ! in_array( SERVERINFO_WIDGET_ID, $value, true ) ) {
+		if ( ! is_array( $value ) || ! in_array( WP_SERVERINFO_WIDGET_ID, $value, true ) ) {
 			continue;
 		}
 
-		$value = array_values( array_diff( $value, array( SERVERINFO_WIDGET_ID ) ) );
+		$value = array_values( array_diff( $value, array( WP_SERVERINFO_WIDGET_ID ) ) );
 
 		if ( empty( $value ) ) {
 			delete_user_meta( $user_id, $meta_key );
@@ -71,7 +71,7 @@ function serverinfo_clean_user_dashboard_meta( $user_id ) {
 		$kept = array_filter(
 			explode( ',', $ids ),
 			function ( $id ) {
-				return SERVERINFO_WIDGET_ID !== $id;
+				return WP_SERVERINFO_WIDGET_ID !== $id;
 			}
 		);
 
@@ -93,7 +93,7 @@ function serverinfo_clean_user_dashboard_meta( $user_id ) {
  *
  * @return void
  */
-function serverinfo_uninstall_site() {
+function wp_serverinfo_uninstall_site() {
 	$meta_keys = array(
 		'closedpostboxes_dashboard',
 		'metaboxhidden_dashboard',
@@ -123,7 +123,7 @@ function serverinfo_uninstall_site() {
 	}
 
 	foreach ( array_unique( $user_ids ) as $user_id ) {
-		serverinfo_clean_user_dashboard_meta( (int) $user_id );
+		wp_serverinfo_clean_user_dashboard_meta( (int) $user_id );
 	}
 }
 
@@ -134,22 +134,22 @@ if ( is_multisite() ) {
 	 * still reporting a successful uninstall. 'fields' => 'ids' avoids
 	 * hydrating WP_Site objects the loop never looks at.
 	 */
-	$serverinfo_site_ids = get_sites(
+	$wp_serverinfo_site_ids = get_sites(
 		array(
 			'fields' => 'ids',
 			'number' => 0,
 		)
 	);
 
-	foreach ( $serverinfo_site_ids as $serverinfo_site_id ) {
+	foreach ( $wp_serverinfo_site_ids as $wp_serverinfo_site_id ) {
 		// switch_to_blog() pushes onto a stack, so the restore belongs inside
 		// the loop -- restoring once at the end leaves the stack unwound by one.
-		switch_to_blog( (int) $serverinfo_site_id );
+		switch_to_blog( (int) $wp_serverinfo_site_id );
 
-		serverinfo_uninstall_site();
+		wp_serverinfo_uninstall_site();
 
 		restore_current_blog();
 	}
 } else {
-	serverinfo_uninstall_site();
+	wp_serverinfo_uninstall_site();
 }
