@@ -1,6 +1,6 @@
 <?php
 /**
- * The WP-ServerInfo admin screen.
+ * The WP-ServerInfo report screen.
  *
  * @package WP-ServerInfo
  */
@@ -8,7 +8,21 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Renders the tabbed admin page under Dashboard.
+ * Registers the menu entry and renders the tabbed report under Tools.
+ *
+ * One entry, and it is under Tools rather than being a top-level menu of its
+ * own or a page under Settings. Section 4.1 wants one menu entry and no
+ * scattering, which the plugin already satisfied -- the widget and the report
+ * have always pointed at each other -- and the choice between the three ways of
+ * spending that entry follows from what the screen is. There is no settings
+ * form on it and nothing to save, so add_options_page() would file a report
+ * under Settings; there are no list tables and nothing to manage, so a
+ * top-level menu would claim a slot in the sidebar for five read-only tables.
+ * add_management_page() puts it where WordPress already keeps read-only
+ * screens about the installation, next to Site Health and Export.
+ *
+ * Before 3.0.0 it was a submenu of index.php, which put a report about the host
+ * inside the Dashboard menu and gave it a URL nobody could guess.
  *
  * Replaces the global display_serverinfo() / get_*info() functions from
  * before 3.0.0.
@@ -16,7 +30,7 @@ defined( 'ABSPATH' ) || exit;
 class WP_ServerInfo_Admin {
 
 	/**
-	 * The admin page slug.
+	 * The report page slug. Unchanged from 2.0.0; only the parent moved.
 	 */
 	const PAGE = 'wp-serverinfo';
 
@@ -30,16 +44,55 @@ class WP_ServerInfo_Admin {
 	const CAPABILITY = 'manage_options';
 
 	/**
-	 * Register the submenu page under the Dashboard menu.
+	 * The capability a screen requires, filtered.
+	 *
+	 * Every capability check in the plugin goes through here, so a site that
+	 * wants to hand the report to somebody other than an administrator changes
+	 * one thing rather than hunting for current_user_can() calls.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $context Which surface is asking: 'report' or 'widget'.
+	 * @return string
+	 */
+	public static function capability( $context = 'report' ) {
+		/**
+		 * Filters the capability a WP-ServerInfo surface requires.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string $capability Capability name.
+		 * @param string $context    Which surface is asking: 'report' or 'widget'.
+		 */
+		return (string) apply_filters( 'wp_serverinfo_capability', self::CAPABILITY, $context );
+	}
+
+	/**
+	 * The report page's own URL.
+	 *
+	 * @param string $tab Tab slug to link to, or '' for the default tab.
+	 * @return string
+	 */
+	public static function url( $tab = '' ) {
+		$args = array( 'page' => self::PAGE );
+
+		if ( '' !== $tab ) {
+			$args['tab'] = $tab;
+		}
+
+		return add_query_arg( $args, admin_url( 'tools.php' ) );
+	}
+
+	/**
+	 * Register the report under the Tools menu.
 	 *
 	 * @return void
 	 */
-	public static function register_menu() {
-		add_submenu_page(
-			'index.php',
+	public static function add_page() {
+		add_management_page(
 			__( 'WP-ServerInfo', 'wp-serverinfo' ),
 			__( 'WP-ServerInfo', 'wp-serverinfo' ),
-			self::CAPABILITY,
+			self::capability( 'report' ),
 			self::PAGE,
 			array( self::class, 'render' )
 		);
@@ -74,38 +127,32 @@ class WP_ServerInfo_Admin {
 	 * @return void
 	 */
 	public static function render() {
+		if ( ! current_user_can( self::capability( 'report' ) ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'wp-serverinfo' ) );
+		}
+
 		$tabs = self::tabs();
 
 		// Read-only tab selection driven by the URL; no state change, so no nonce is needed.
-		$active = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
+		$active = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation, no state change, so there is no nonce to verify.
 
 		if ( ! isset( $tabs[ $active ] ) ) {
 			$active = 'general';
 		}
 
-		self::render_styles();
-
 		echo '<div class="wrap">' . "\n";
 		echo '<h1>' . esc_html__( 'WP-ServerInfo', 'wp-serverinfo' ) . '</h1>' . "\n";
 
-		echo '<h2 class="nav-tab-wrapper">';
+		printf( '<nav class="nav-tab-wrapper" aria-label="%s">', esc_attr__( 'Server information sections', 'wp-serverinfo' ) );
 		foreach ( $tabs as $tab => $label ) {
-			$url = add_query_arg(
-				array(
-					'page' => self::PAGE,
-					'tab'  => $tab,
-				),
-				admin_url( 'index.php' )
-			);
-
 			printf(
 				'<a href="%s" class="nav-tab%s">%s</a>',
-				esc_url( $url ),
+				esc_url( self::url( $tab ) ),
 				$active === $tab ? ' nav-tab-active' : '',
 				esc_html( $label )
 			);
 		}
-		echo '</h2>' . "\n";
+		echo '</nav>' . "\n";
 
 		switch ( $active ) {
 			case 'php':
@@ -129,58 +176,37 @@ class WP_ServerInfo_Admin {
 	}
 
 	/**
-	 * Emit the page's CSS.
-	 *
-	 * Previously each panel carried its own near-identical RTL block; the
-	 * rules are the same for every panel, so they are emitted once here.
-	 *
-	 * @return void
-	 */
-	private static function render_styles() {
-		echo '<style>' . "\n";
-		echo '.wrap .widefat tbody tr:hover td { background-color: #f6f7f7; }' . "\n";
-
-		if ( is_rtl() ) {
-			/*
-			 * Server values -- paths, versions, IP addresses, ini directives --
-			 * are latin text regardless of the admin language, so the tables
-			 * read left to right even on an RTL install.
-			 */
-			echo '.wrap .serverinfo-panel,' . "\n";
-			echo '.wrap .serverinfo-panel table,' . "\n";
-			echo '.wrap .serverinfo-panel th,' . "\n";
-			echo '.wrap .serverinfo-panel td { direction: ltr; text-align: left; }' . "\n";
-			echo '.wrap .serverinfo-panel h2 { padding: 0.5em 0 0; }' . "\n";
-		}
-
-		echo '</style>' . "\n";
-	}
-
-	/**
 	 * Open a panel wrapper.
 	 *
-	 * @param string $id The panel's DOM id, kept for backwards compatibility
-	 *                   with anyone styling these screens.
+	 * The wrapper carries dir="ltr" rather than a stylesheet. Every value in
+	 * these tables -- paths, versions, IP addresses, ini directive names -- is
+	 * latin text whatever the admin language is, so the panels have to read left
+	 * to right even on an RTL install. Before 3.0.0 that was a <style> block
+	 * written into the page, with a physical text-align and an !important; the
+	 * attribute says the same thing to the browser, needs no stylesheet to ship
+	 * and to enqueue, and is what section 5.1 means by writing direction-neutral
+	 * CSS instead of mirroring it.
+	 *
+	 * @param string $id The panel's DOM id, unchanged since 2.0.0 so that anyone
+	 *                   styling these screens still finds them.
 	 * @return void
 	 */
 	private static function open_panel( $id ) {
-		echo '<div id="' . esc_attr( $id ) . '" class="serverinfo-panel">' . "\n";
+		echo '<div id="' . esc_attr( $id ) . '" class="serverinfo-panel" dir="ltr">' . "\n";
 	}
 
 	/**
 	 * Render one table row of two label/value pairs.
 	 *
-	 * @param string $row_class  Row class, '' or 'alternate'.
-	 * @param string $left_label Left label.
-	 * @param string $left_value Left value.
+	 * @param string $left_label  Left label.
+	 * @param string $left_value  Left value.
 	 * @param string $right_label Right label.
 	 * @param string $right_value Right value.
 	 * @return void
 	 */
-	private static function render_pair_row( $row_class, $left_label, $left_value, $right_label, $right_value ) {
+	private static function render_pair_row( $left_label, $left_value, $right_label, $right_value ) {
 		printf(
-			"<tr%s><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
-			'' !== $row_class ? ' class="' . esc_attr( $row_class ) . '"' : '',
+			"<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
 			esc_html( $left_label ),
 			esc_html( $left_value ),
 			esc_html( $right_label ),
@@ -197,9 +223,9 @@ class WP_ServerInfo_Admin {
 		self::open_panel( 'GeneralOverview' );
 
 		echo '<h2>' . esc_html__( 'General Overview', 'wp-serverinfo' ) . '</h2>' . "\n";
-		echo '<table class="widefat">' . "\n";
+		echo '<table class="widefat striped">' . "\n";
 		printf(
-			"<thead><tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+			"<thead><tr><th scope=\"col\">%s</th><th scope=\"col\">%s</th><th scope=\"col\">%s</th><th scope=\"col\">%s</th></tr></thead><tbody>\n",
 			esc_html__( 'Variable Name', 'wp-serverinfo' ),
 			esc_html__( 'Value', 'wp-serverinfo' ),
 			esc_html__( 'Variable Name', 'wp-serverinfo' ),
@@ -279,8 +305,8 @@ class WP_ServerInfo_Admin {
 			),
 		);
 
-		foreach ( $rows as $index => $row ) {
-			self::render_pair_row( 0 === $index % 2 ? '' : 'alternate', $row[0], $row[1], $row[2], $row[3] );
+		foreach ( $rows as $row ) {
+			self::render_pair_row( $row[0], $row[1], $row[2], $row[3] );
 		}
 
 		echo '</tbody></table>' . "\n";
@@ -297,11 +323,12 @@ class WP_ServerInfo_Admin {
 
 		echo '<h2>PHP ' . esc_html( phpversion() ) . '</h2>' . "\n";
 
-		echo '<br class="clear" />' . "\n";
-		echo '<table class="widefat"><tbody>' . "\n";
+		echo '<table class="widefat striped"><tbody>' . "\n";
 		foreach ( WP_ServerInfo_PHP::summary() as $label => $value ) {
+			// scope="row" rather than a bolded cell: the label names the row, and
+			// core's table styling already emits it bold.
 			printf(
-				"<tr><td><strong>%s</strong></td><td>%s</td></tr>\n",
+				"<tr><th scope=\"row\">%s</th><td>%s</td></tr>\n",
 				esc_html( $label ),
 				esc_html( $value )
 			);
@@ -311,10 +338,9 @@ class WP_ServerInfo_Admin {
 		$ini = WP_ServerInfo_PHP::ini_directives();
 
 		if ( ! empty( $ini ) ) {
-			echo '<br class="clear" />' . "\n";
-			echo '<table class="widefat">' . "\n";
+			echo '<table class="widefat striped">' . "\n";
 			printf(
-				"<thead><tr><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+				"<thead><tr><th scope=\"col\">%s</th><th scope=\"col\">%s</th><th scope=\"col\">%s</th></tr></thead><tbody>\n",
 				esc_html__( 'Directive', 'wp-serverinfo' ),
 				esc_html__( 'Local Value', 'wp-serverinfo' ),
 				esc_html__( 'Master Value', 'wp-serverinfo' )
@@ -348,10 +374,9 @@ class WP_ServerInfo_Admin {
 		$variables = WP_ServerInfo_MySQL::variables();
 
 		if ( $variables ) {
-			echo '<br class="clear" />' . "\n";
-			echo '<table class="widefat" dir="ltr">' . "\n";
+			echo '<table class="widefat striped">' . "\n";
 			printf(
-				"<thead><tr><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+				"<thead><tr><th scope=\"col\">%s</th><th scope=\"col\">%s</th></tr></thead><tbody>\n",
 				esc_html__( 'Variable Name', 'wp-serverinfo' ),
 				esc_html__( 'Value', 'wp-serverinfo' )
 			);
@@ -378,10 +403,9 @@ class WP_ServerInfo_Admin {
 	 * @return void
 	 */
 	private static function render_stats_table( array $rows ) {
-		echo '<br class="clear" />' . "\n";
-		echo '<table class="widefat" dir="ltr">' . "\n";
+		echo '<table class="widefat striped">' . "\n";
 		printf(
-			"<thead><tr><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>\n",
+			"<thead><tr><th scope=\"col\">%s</th><th scope=\"col\">%s</th><th scope=\"col\">%s</th></tr></thead><tbody>\n",
 			esc_html__( 'Variable Name', 'wp-serverinfo' ),
 			esc_html__( 'Value', 'wp-serverinfo' ),
 			esc_html__( 'Description', 'wp-serverinfo' )

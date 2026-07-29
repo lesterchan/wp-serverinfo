@@ -1,6 +1,6 @@
 <?php
 /**
- * The tabbed admin screen.
+ * The tabbed report screen.
  *
  * Rendering is driven through WordPress's own menu hook rather than by
  * calling the render method directly, so these keep working if the callback
@@ -10,16 +10,19 @@
  */
 
 /**
- * Covers the markup, tab routing and access control of the admin screen.
+ * Covers the markup, tab routing and access control of the report screen.
  */
 class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 
 	/**
-	 * Menu hook the submenu page renders on.
+	 * Menu hook the page renders on.
+	 *
+	 * The page is parented on tools.php by add_management_page(), and that menu's
+	 * slug is 'tools', so the load hook is tools_page_* not admin_page_*.
 	 *
 	 * @var string
 	 */
-	private $hook = 'dashboard_page_wp-serverinfo';
+	private $hook = 'tools_page_wp-serverinfo';
 
 	public function set_up() {
 		parent::set_up();
@@ -27,17 +30,18 @@ class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 		require_once ABSPATH . 'wp-admin/includes/admin.php';
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		set_current_screen( 'dashboard' );
+		set_current_screen( 'tools' );
 
-		// wp-admin/menu.php is what makes a page under index.php hook as
-		// dashboard_page_* rather than admin_page_*; seed just that entry.
-		$GLOBALS['admin_page_hooks']['index.php'] = 'dashboard';
+		// wp-admin/menu.php is what makes a page under tools.php hook as
+		// tools_page_* rather than admin_page_*; seed just that entry.
+		$GLOBALS['admin_page_hooks']['tools.php'] = 'tools';
 
 		do_action( 'admin_menu' );
 	}
 
 	public function tear_down() {
-		unset( $_GET['tab'] );
+		unset( $_GET['tab'], $_GET['page'] );
+
 		parent::tear_down();
 	}
 
@@ -56,12 +60,57 @@ class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 		return ob_get_clean();
 	}
 
-	public function test_page_is_registered_under_the_dashboard_menu() {
+	/**
+	 * The submenu entry, or null when it was not registered.
+	 *
+	 * @return array|null
+	 */
+	private function menu_entry() {
 		global $submenu;
 
-		$slugs = wp_list_pluck( $submenu['index.php'], 2 );
+		foreach ( $submenu['tools.php'] ?? array() as $item ) {
+			if ( WP_ServerInfo_Admin::PAGE === $item[2] ) {
+				return $item;
+			}
+		}
 
-		$this->assertContains( 'wp-serverinfo', $slugs );
+		return null;
+	}
+
+	/**
+	 * One menu entry, and it is under Tools.
+	 *
+	 * Before 3.0.0 the page hung off index.php, putting a report about the host
+	 * inside the Dashboard menu. It is not under Settings either: there is no
+	 * settings form on it, and section 4.1 reserves add_options_page() for a
+	 * plugin whose only admin surface is settings.
+	 */
+	public function test_page_is_registered_once_under_the_tools_menu() {
+		global $submenu, $menu;
+
+		$this->assertNotNull( $this->menu_entry(), 'The report was not registered under Tools.' );
+
+		$parents = array();
+
+		foreach ( (array) $submenu as $parent => $items ) {
+			foreach ( $items as $item ) {
+				if ( WP_ServerInfo_Admin::PAGE === $item[2] ) {
+					$parents[] = $parent;
+				}
+			}
+		}
+
+		$this->assertSame(
+			array( 'tools.php' ),
+			$parents,
+			'The report belongs under Tools, exactly once and nowhere else.'
+		);
+
+		$this->assertNotContains(
+			WP_ServerInfo_Admin::PAGE,
+			wp_list_pluck( (array) $menu, 2 ),
+			'A read-only report does not earn a top-level menu.'
+		);
 	}
 
 	/**
@@ -69,16 +118,51 @@ class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 	 * manage_options and not something weaker.
 	 */
 	public function test_page_requires_manage_options() {
-		global $submenu;
+		$entry = $this->menu_entry();
 
-		foreach ( $submenu['index.php'] as $item ) {
-			if ( 'wp-serverinfo' === $item[2] ) {
-				$this->assertSame( 'manage_options', $item[1] );
-				return;
-			}
-		}
+		$this->assertNotNull( $entry, 'The WP-ServerInfo page was not registered.' );
+		$this->assertSame( 'manage_options', $entry[1] );
+		$this->assertSame( 'manage_options', WP_ServerInfo_Admin::CAPABILITY );
+	}
 
-		$this->fail( 'The WP-ServerInfo submenu page was not registered.' );
+	/**
+	 * Every check goes through the one filter, so a site hands the screen over
+	 * in a single place (section 2.7).
+	 */
+	public function test_the_capability_is_filterable_per_context() {
+		$seen = array();
+
+		add_filter(
+			'wp_serverinfo_capability',
+			function ( $capability, $context ) use ( &$seen ) {
+				$seen[] = $context;
+
+				return 'edit_posts';
+			},
+			10,
+			2
+		);
+
+		$this->assertSame( 'edit_posts', WP_ServerInfo_Admin::capability( 'report' ) );
+		$this->assertSame( 'edit_posts', WP_ServerInfo_Admin::capability( 'widget' ) );
+		$this->assertSame( array( 'report', 'widget' ), $seen );
+	}
+
+	/**
+	 * The page URL is built in one place, so the widget's link and the tab links
+	 * cannot drift apart the way they would if each spelled out tools.php.
+	 */
+	public function test_the_page_url_is_under_tools() {
+		$this->assertSame( admin_url( 'tools.php?page=wp-serverinfo' ), WP_ServerInfo_Admin::url() );
+		$this->assertSame(
+			admin_url( 'tools.php?page=wp-serverinfo&tab=mysql' ),
+			WP_ServerInfo_Admin::url( 'mysql' )
+		);
+		$this->assertStringNotContainsString(
+			'index.php',
+			WP_ServerInfo_Admin::url(),
+			'The page left the Dashboard menu in 3.0.0.'
+		);
 	}
 
 	/**
@@ -154,6 +238,29 @@ class WP_ServerInfo_Admin_Test extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '<?php', $html );
 		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html );
 		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html );
+	}
+
+	/**
+	 * Section 4.4 forbids inline style, width, valign and align attributes and
+	 * allows only core classes. Before 3.0.0 the screen wrote its own <style>
+	 * block into the page, including an RTL branch with a physical text-align.
+	 *
+	 * @dataProvider data_tabs
+	 *
+	 * @param string $tab Tab slug.
+	 */
+	public function test_screen_uses_core_classes_and_no_inline_styling( $tab ) {
+		$html = $this->render( $tab );
+
+		$this->assertStringNotContainsString( '<style', $html );
+		$this->assertStringNotContainsString( 'style=', $html );
+		$this->assertStringNotContainsString( '!important', $html );
+		$this->assertDoesNotMatchRegularExpression( '/\s(width|valign|align)=/', $html );
+
+		$this->assertStringContainsString( 'class="wrap"', $html );
+		$this->assertStringContainsString( 'nav-tab-wrapper', $html );
+		$this->assertStringContainsString( 'class="widefat striped"', $html );
+		$this->assertSame( 1, preg_match_all( '/<h1[ >]/', $html ), 'One h1 per screen.' );
 	}
 
 	public function test_memcached_and_redis_tabs_appear_only_with_their_extension() {

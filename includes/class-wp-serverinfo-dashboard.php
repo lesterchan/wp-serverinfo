@@ -23,7 +23,7 @@ class WP_ServerInfo_Dashboard {
 	 * @return void
 	 */
 	public static function register_widget() {
-		if ( ! current_user_can( WP_ServerInfo_Admin::CAPABILITY ) ) {
+		if ( ! current_user_can( WP_ServerInfo_Admin::capability( 'widget' ) ) ) {
 			return;
 		}
 
@@ -78,13 +78,16 @@ class WP_ServerInfo_Dashboard {
 	 * @return void
 	 */
 	public static function render() {
-		if ( is_rtl() ) {
-			// Server values are latin text whatever the admin language is.
-			echo '<style>#wp-serverinfo ul { padding-left: 15px !important; }</style>' . "\n";
-			echo '<div id="wp-serverinfo" style="direction: ltr; text-align: left;">' . "\n";
-		} else {
-			echo '<div id="wp-serverinfo">' . "\n";
-		}
+		/*
+		 * dir="ltr", and nothing else. Every value below is latin text whatever
+		 * the admin language is, so the widget has to read left to right even on
+		 * an RTL install -- but before 3.0.0 that meant an inline style attribute
+		 * and a <style> block carrying padding-left with an !important, all three
+		 * of which section 4.4 and section 5 forbid. The attribute says the same
+		 * thing to the browser and needs no stylesheet at all; the list padding it
+		 * was correcting is core's, and core mirrors it for RTL already.
+		 */
+		echo '<div id="wp-serverinfo" dir="ltr">' . "\n";
 
 		self::render_section(
 			__( 'General', 'wp-serverinfo' ),
@@ -145,8 +148,8 @@ class WP_ServerInfo_Dashboard {
 		}
 
 		printf(
-			"<p class=\"textright\"><a href=\"%s\" class=\"button\">%s</a></p>\n",
-			esc_url( admin_url( 'index.php?page=' . WP_ServerInfo_Admin::PAGE ) ),
+			"<p><a href=\"%s\" class=\"button\">%s</a></p>\n",
+			esc_url( WP_ServerInfo_Admin::url() ),
 			esc_html__( 'View all', 'wp-serverinfo' )
 		);
 

@@ -63,7 +63,7 @@ class WP_ServerInfo_Plugin_Test extends WP_UnitTestCase {
 
 	public function test_the_two_admin_surfaces_are_hooked() {
 		$this->assertNotFalse(
-			has_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'register_menu' ) )
+			has_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'add_page' ) )
 		);
 		$this->assertNotFalse(
 			has_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) )

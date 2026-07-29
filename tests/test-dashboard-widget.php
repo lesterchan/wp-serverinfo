@@ -30,7 +30,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_UnitTestCase {
 		$GLOBALS['wp_meta_boxes'] = array();
 		do_action( 'wp_dashboard_setup' );
 
-		return $GLOBALS['wp_meta_boxes']['dashboard']['normal']['core']['dashboard_serverinfo'] ?? null;
+		return $GLOBALS['wp_meta_boxes']['dashboard']['normal']['core'][ WP_SERVERINFO_WIDGET_ID ] ?? null;
 	}
 
 	/**
@@ -95,10 +95,34 @@ class WP_ServerInfo_Dashboard_Test extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Max Script Execute Time', $html );
 	}
 
-	public function test_widget_links_to_the_full_page() {
+	/**
+	 * The "View all" button follows the report, which moved from the Dashboard
+	 * menu to Tools in 3.0.0.
+	 */
+	public function test_widget_links_to_the_report_under_tools() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		$this->assertStringContainsString( 'page=wp-serverinfo', $this->render() );
+		$html = $this->render();
+
+		$this->assertStringContainsString( esc_url( WP_ServerInfo_Admin::url() ), $html );
+		$this->assertStringContainsString( 'tools.php', $html );
+		$this->assertStringNotContainsString( 'index.php?page=wp-serverinfo', $html );
+	}
+
+	/**
+	 * Section 4.4 allows no inline style attribute anywhere, and section 5 no
+	 * !important. Before 3.0.0 an RTL admin got both: a style attribute on the
+	 * wrapper and a <style> block carrying padding-left: 15px !important.
+	 */
+	public function test_widget_carries_no_inline_styles() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$html = $this->render();
+
+		$this->assertStringNotContainsString( '<style', $html );
+		$this->assertStringNotContainsString( 'style=', $html );
+		$this->assertStringNotContainsString( '!important', $html );
+		$this->assertStringContainsString( 'dir="ltr"', $html );
 	}
 
 	/**
