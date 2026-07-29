@@ -22,7 +22,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.2'
           coverage: none
           tools: cs2pr
 
@@ -37,16 +37,36 @@ jobs:
         run: $(composer global config bin-dir --absolute)/phpcs -q --report=checkstyle . | cs2pr
 
   phpunit:
-    name: PHPUnit (WP ${{ matrix.wordpress }}, PHP ${{ matrix.php }})
+    name: PHPUnit (WP ${{ matrix.wordpress }}, PHP ${{ matrix.php }}, ${{ matrix.multisite && 'multisite' || 'single site' }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        # Every supported stack, in both modes. Six rows, no special cases.
+        #
+        # Multisite is not a spare wheel: uninstall.php branches on
+        # is_multisite(), and network-activated plugins are read from a site
+        # option the single-site run never touches. It runs on the FLOOR too,
+        # because that is where multisite breaks -- wp_get_sites() removed in
+        # 5.1, uninstall stopping at 100 sites, switch_to_blog() stacks left
+        # unwound, custom tables not registered with $wpdb inside a switch.
+        # Testing multisite only on latest tests it where it least likely fails.
         include:
-          - php: '7.4'
-            wordpress: '6.0'
-          - php: '8.3'
+          - php: '8.2'
+            wordpress: '6.8'
+          - php: '8.2'
+            wordpress: '6.8'
+            multisite: true
+          - php: '8.2'
             wordpress: 'latest'
+          - php: '8.2'
+            wordpress: 'latest'
+            multisite: true
+          - php: '8.5'
+            wordpress: 'latest'
+          - php: '8.5'
+            wordpress: 'latest'
+            multisite: true
     steps:
       - uses: actions/checkout@v7
 
@@ -67,7 +87,9 @@ jobs:
           npx --yes @wordpress/env run tests-cli --env-cwd=wp-content/plugins/wp-serverinfo \
             composer install --no-interaction --no-progress
 
+      # The multisite config sets WP_MULTISITE for the WordPress test bootstrap,
+      # so the mode is chosen by the config file rather than by the environment.
       - name: Run PHPUnit
         run: |
           npx --yes @wordpress/env run tests-cli --env-cwd=wp-content/plugins/wp-serverinfo \
-            vendor/bin/phpunit
+            vendor/bin/phpunit -c ${{ matrix.multisite && 'phpunit-multisite.xml.dist' || 'phpunit.xml.dist' }}

@@ -1,4 +1,5 @@
 vendor/
 node_modules/
+.idea/
 .phpunit.result.cache
 .wp-env.override.json

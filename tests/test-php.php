@@ -37,18 +37,24 @@ class Test_ServerInfo_PHP extends WP_UnitTestCase {
 	 * absent. max_execution_time is 0 on any host with no script timeout, and
 	 * those installs displayed "N/A" -- rendered "N/As", because the template
 	 * appends the unit.
+	 *
+	 * The directive is written with set_time_limit() rather than ini_set():
+	 * both reach the same setting, but it is the API WordPress asks for, so
+	 * the assertion needs neither a silenced error nor a phpcs exclusion. It
+	 * returns false where a host has disabled it, which is the same "not
+	 * settable here" answer ini_set() gave.
 	 */
 	public function test_zero_is_a_value_not_a_missing_directive() {
-		$original = ini_get( 'max_execution_time' );
+		$original = (int) ini_get( 'max_execution_time' );
 
-		if ( false === @ini_set( 'max_execution_time', '0' ) ) {
+		if ( ! set_time_limit( 0 ) ) {
 			$this->markTestSkipped( 'max_execution_time is not settable in this SAPI.' );
 		}
 
 		$this->assertSame( '0', ServerInfo_PHP::max_execution() );
 		$this->assertStringNotContainsString( 'N/A', ServerInfo_PHP::max_execution() );
 
-		@ini_set( 'max_execution_time', $original );
+		set_time_limit( $original );
 	}
 
 	public function test_unset_directive_reports_na() {
