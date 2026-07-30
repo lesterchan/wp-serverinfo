@@ -141,7 +141,7 @@ class WP_ServerInfo_Admin {
 		}
 
 		echo '<div class="wrap">' . "\n";
-		echo '<h1>' . esc_html__( 'WP-ServerInfo', 'wp-serverinfo' ) . '</h1>' . "\n";
+		echo '<h1>' . esc_html__( 'Server Information', 'wp-serverinfo' ) . '</h1>' . "\n";
 
 		printf( '<nav class="nav-tab-wrapper" aria-label="%s">', esc_attr__( 'Server information sections', 'wp-serverinfo' ) );
 		foreach ( $tabs as $tab => $label ) {
