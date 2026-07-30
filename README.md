@@ -194,7 +194,7 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 ### 3.0.0
 The first release since 2.0.0, and it is a rewrite. Five things are worth knowing before you update.
 
-**Your site must be on WordPress 6.8 or later and PHP 8.2 or later.** 2.0.0 asked for WordPress 4.0 and PHP 7.2, so this is a large jump and it is the break most likely to actually bite: a site on an older stack simply will not be offered the update. If your host still runs PHP 7.2 or 7.4, ask to be moved to a supported version before updating — 7.4 stopped receiving security fixes in 2022.
+**Your site must be on WordPress 6.8 or later and PHP 8.2 or later.** 2.0.0 asked for WordPress 4.0 and PHP 7.2, so this is a large jump and it is the break most likely to actually bite: a site on an older stack simply will not be offered the update. Check `WP-Admin -> Tools -> Site Health -> Info -> Server` for your PHP version; if it is below 8.2, ask your host to move you up. PHP 8.1 and everything before it stopped receiving security fixes.
 
 **The screen moved from Dashboard to Tools.** It was at `Dashboard → WP-ServerInfo`; it is now at `Tools → WP-ServerInfo`. The page slug has not changed, so update any bookmark from `/wp-admin/index.php?page=wp-serverinfo` to `/wp-admin/tools.php?page=wp-serverinfo`. It is a report about your host rather than a Dashboard panel, and Tools is where WordPress keeps that sort of screen. The Server Information dashboard widget stays exactly where it was, and its "View all" button follows the page.
 
