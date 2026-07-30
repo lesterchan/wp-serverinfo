@@ -29,7 +29,6 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 	 */
 	private function resolve( $method ) {
 		$reflection = new ReflectionMethod( WP_ServerInfo_Cache::class, $method );
-		$reflection->setAccessible( true );
 
 		return $reflection->invoke( null );
 	}
