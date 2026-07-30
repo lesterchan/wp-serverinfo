@@ -41,7 +41,6 @@ class WP_ServerInfo {
 	 * Register hooks.
 	 */
 	private function __construct() {
-		WP_ServerInfo_Options::register();
 
 		add_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'add_page' ) );
 		add_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) );

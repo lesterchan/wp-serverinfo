@@ -13,25 +13,25 @@ abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 	/**
 	 * Start each test with no stored row, whatever the last one wrote.
 	 *
-	 * WP_ServerInfo_Options::maybe_upgrade() runs on plugins_loaded, so by the
-	 * time any test starts the row already exists -- which is fine for most of
-	 * them and wrong for the two that assert on its absence.
+	 * The plugin stores nothing now (STANDARDS.md 2.1), so nothing should ever
+	 * put this row back. Clearing it anyway keeps a test that writes one by hand
+	 * -- the pre-release cleanup case -- from leaking into the next.
 	 *
 	 * @return void
 	 */
 	public function set_up() {
 		parent::set_up();
 
-		delete_option( WP_ServerInfo_Options::VERSION );
+		delete_option( 'wp_serverinfo_version' );
 	}
 
 	/**
-	 * Drop the row again, so a test cannot leak its markers into the next.
+	 * Drop the row again, so a test cannot leak it into the next.
 	 *
 	 * @return void
 	 */
 	public function tear_down() {
-		delete_option( WP_ServerInfo_Options::VERSION );
+		delete_option( 'wp_serverinfo_version' );
 
 		parent::tear_down();
 	}

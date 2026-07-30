@@ -42,14 +42,14 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * All six of section 2.3, and in that order, because the order is the thing
-	 * an edit drifts out of.
+	 * Section 2.3's constants, in that order, because the order is the thing an
+	 * edit drifts out of. There is no DB_VERSION: no schema, nothing stored.
 	 */
-	public function test_the_six_constants_are_defined_in_order() {
+	public function test_the_constants_are_defined_in_order() {
 		preg_match_all( "/^define\( 'WP_SERVERINFO_([A-Z_]+)'/m", $this->main_file(), $matches );
 
 		$this->assertSame(
-			array( 'VERSION', 'DB_VERSION', 'SLUG', 'MAIN_FILE', 'DIR', 'URL', 'WIDGET_ID' ),
+			array( 'VERSION', 'SLUG', 'MAIN_FILE', 'DIR', 'URL', 'WIDGET_ID' ),
 			$matches[1]
 		);
 	}
@@ -60,8 +60,14 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 		$this->assertStringEndsWith( '/wp-serverinfo/', WP_SERVERINFO_URL );
 	}
 
-	public function test_the_db_version_is_a_string_counter() {
-		$this->assertSame( '1', WP_SERVERINFO_DB_VERSION );
+	/**
+	 * There is no schema counter, because there is no schema and no stored row.
+	 *
+	 * See STANDARDS.md 2.1: a plugin with no settings and no tables stores
+	 * nothing, so it has nothing for a DB version to describe.
+	 */
+	public function test_there_is_no_db_version_constant() {
+		$this->assertFalse( defined( 'WP_SERVERINFO_DB_VERSION' ), 'The schema counter is back without a schema to count.' );
 	}
 
 	public function test_the_slug_constant_is_the_directory_name() {
@@ -78,7 +84,6 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 				'WP_ServerInfo_Dashboard',
 				'WP_ServerInfo_Format',
 				'WP_ServerInfo_MySQL',
-				'WP_ServerInfo_Options',
 				'WP_ServerInfo_PHP',
 			) as $class
 		) {
@@ -101,13 +106,11 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 
 	/**
 	 * The requires are ordered so that a class is loaded after everything it
-	 * names: Options first, the probes next, the two surfaces after those, the
-	 * bootstrap last.
+	 * names: the probes first, the two surfaces after those, the bootstrap last.
 	 */
 	public function test_every_include_is_required_before_the_bootstrap() {
 		preg_match_all( '#includes/(class-wp-serverinfo[a-z-]*\.php)#', $this->main_file(), $matches );
 
-		$this->assertSame( 'class-wp-serverinfo-options.php', reset( $matches[1] ) );
 		$this->assertSame( 'class-wp-serverinfo.php', end( $matches[1] ) );
 
 		$shipped = array_map( 'basename', (array) glob( dirname( __DIR__ ) . '/includes/class-*.php' ) );

@@ -42,11 +42,6 @@ defined( 'ABSPATH' ) || exit;
 define( 'WP_SERVERINFO_VERSION', '3.0.0' );
 
 /**
- * Schema counter. Bumped only when the stored rows need reshaping.
- */
-define( 'WP_SERVERINFO_DB_VERSION', '1' );
-
-/**
  * WP-ServerInfo slug, which is also the text domain.
  */
 define( 'WP_SERVERINFO_SLUG', 'wp-serverinfo' );
@@ -76,7 +71,6 @@ define( 'WP_SERVERINFO_URL', plugin_dir_url( __FILE__ ) );
  */
 define( 'WP_SERVERINFO_WIDGET_ID', 'dashboard_serverinfo' );
 
-require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-options.php';
 require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-format.php';
 require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-php.php';
 require_once WP_SERVERINFO_DIR . 'includes/class-wp-serverinfo-mysql.php';

@@ -184,14 +184,22 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 		$this->assertDoesNotMatchRegularExpression( '/\bWP_SERVERINFO_[A-Z_]+/', $body );
 	}
 
+	/**
+	 * A version row left by a pre-release build is still deleted.
+	 *
+	 * Written by hand, because nothing in the plugin writes it any more: it
+	 * stores nothing at all (STANDARDS.md 2.1). An early build of the unreleased
+	 * 3.0.0 did write it, and uninstall is the only thing that will ever take it
+	 * off a site that ran that build.
+	 */
 	public function test_the_version_row_is_deleted() {
-		WP_ServerInfo_Options::maybe_upgrade();
+		update_option( 'wp_serverinfo_version', array( 'plugin' => '3.0.0' ) );
 
-		$this->assertIsArray( get_option( WP_ServerInfo_Options::VERSION ) );
+		$this->assertIsArray( get_option( 'wp_serverinfo_version' ) );
 
 		$this->run_uninstall();
 
-		$this->assertFalse( get_option( WP_ServerInfo_Options::VERSION ) );
+		$this->assertFalse( get_option( 'wp_serverinfo_version' ) );
 	}
 
 	/**

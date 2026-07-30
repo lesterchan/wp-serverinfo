@@ -566,39 +566,36 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * The upgrade markers live in their own row, holding those two keys and no
-	 * others. Anything else in here means a marker has drifted back into the
-	 * settings array, which is the bug this shape exists to make impossible.
+	 * The plugin writes no option row at all, ever.
+	 *
+	 * WP-ServerInfo is five read-only tables describing the host and a dashboard
+	 * widget. It keeps no state between requests, so under STANDARDS.md 2.1 it
+	 * stores nothing -- not a settings row, and not the version markers either.
+	 * Those exist to tell a migration what it is upgrading from, and there is no
+	 * migration and nothing to migrate.
 	 */
-	public function test_version_row_holds_exactly_plugin_and_db() {
-		WP_ServerInfo_Options::maybe_upgrade();
+	public function test_the_plugin_stores_nothing() {
+		// admin_init is deliberately not fired: core's callbacks on it send
+		// headers, which PHPUnit has already begun output past.
+		do_action( 'plugins_loaded' );
+		do_action( 'init' );
 
-		$markers = get_option( WP_ServerInfo_Options::VERSION );
+		global $wpdb;
 
-		$this->assertIsArray( $markers, 'wp_serverinfo_version must be an array.' );
+		$rows = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$wpdb->esc_like( 'wp_serverinfo_' ) . '%'
+			)
+		);
 
-		$keys = array_keys( $markers );
-		sort( $keys );
-
-		$this->assertSame( array( 'db', 'plugin' ), $keys );
-		$this->assertSame( WP_SERVERINFO_VERSION, $markers['plugin'] );
-		$this->assertSame( WP_SERVERINFO_DB_VERSION, $markers['db'] );
+		$this->assertSame( array(), $rows, 'WP-ServerInfo wrote an option row; it is meant to store nothing at all.' );
 	}
 
 	/**
-	 * Elsewhere in the family this slot holds
-	 * test_settings_sanitizer_never_stores_version_markers(), which guards
-	 * against a version marker being kept inside the settings array.
-	 *
-	 * WP-ServerInfo has no settings, no settings row and no sanitiser (section
-	 * 2.1), so there is nothing for a marker to hide in. Section 7.2 substitutes
-	 * this assertion instead: the settings row must never come into existence. If
-	 * a later change reintroduces one, the sanitiser test has to come back with
-	 * it, and this failing is the reminder.
+	 * There is still no settings row, and nothing that would build one.
 	 */
-	public function test_no_settings_row_exists_to_hide_a_marker_in() {
-		WP_ServerInfo_Options::maybe_upgrade();
-
+	public function test_no_settings_row_and_no_settings_api() {
 		$this->assertFalse(
 			get_option( 'wp_serverinfo_options' ),
 			'WP-ServerInfo is exempt from the settings row; reinstating one needs the sanitiser test back.'
@@ -620,7 +617,10 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	 * same test through uninstall.php's get_sites() branch.
 	 */
 	public function test_uninstall_removes_every_option_row() {
-		WP_ServerInfo_Options::maybe_upgrade();
+		// Written by hand: nothing in the plugin writes this any more. An early
+		// build of the unreleased 3.0.0 did, and uninstall is the only thing that
+		// will ever take it off a site that ran that build.
+		update_option( 'wp_serverinfo_version', array( 'plugin' => '3.0.0' ) );
 
 		$this->assertNotEmpty(
 			$this->stored_option_names(),
