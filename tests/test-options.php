@@ -122,9 +122,18 @@ class WP_ServerInfo_Options_Test extends WP_ServerInfo_TestCase {
 
 		WP_ServerInfo_Options::maybe_upgrade();
 
+		// Sorted, because which key the row happens to list first is not a
+		// promise: a half-written row keeps whatever it already had and the
+		// upgrade merges the other one in after it. What matters is that both
+		// are present and nothing else is. This matches the shared
+		// test_version_row_holds_exactly_plugin_and_db() in test-metadata.php.
+		$keys = array_keys( WP_ServerInfo_Options::markers() );
+		sort( $keys );
+
 		$this->assertSame(
 			array( 'db', 'plugin' ),
-			array_keys( WP_ServerInfo_Options::markers() )
+			$keys,
+			'the repaired row holds exactly the two markers.'
 		);
 	}
 
