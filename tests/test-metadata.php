@@ -60,7 +60,9 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 					return true;
 				}
 
-				return ! in_array( $file->getFilename(), array( 'vendor', 'node_modules', '.git' ), true );
+				// artifacts/ is a Playwright output directory: gitignored, never
+				// deployed, and recreated on any failing run.
+				return ! in_array( $file->getFilename(), array( 'vendor', 'node_modules', '.git', 'artifacts' ), true );
 			}
 		);
 
