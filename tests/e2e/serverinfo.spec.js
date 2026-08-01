@@ -168,7 +168,7 @@ test.describe( 'The Server Information report', () => {
 
 		await expect( widget ).toBeVisible();
 		await expect( widget.locator( '.hndle, h2' ).first() ).toContainText(
-			'Server Information'
+			'Server Information',
 		);
 
 		await expect( widget ).toContainText( /PHP/ );
@@ -193,7 +193,7 @@ test.describe( 'The Server Information report', () => {
 		// attacker wants first -- so it is behind a capability an editor does not
 		// have, and the widget is behind its own.
 		await expect(
-			other.page.locator( '#adminmenu a[href="tools.php?page=wp-serverinfo"]' )
+			other.page.locator( '#adminmenu a[href="tools.php?page=wp-serverinfo"]' ),
 		).toHaveCount( 0 );
 
 		await other.page.goto( `${ baseURL }/wp-admin/index.php` );
@@ -201,7 +201,7 @@ test.describe( 'The Server Information report', () => {
 
 		await other.page.goto( `${ baseURL }${ REPORT_URL }` );
 		await expect( other.page.locator( 'body' ) ).toContainText(
-			/sufficient permissions|not allowed to access this page/
+			/sufficient permissions|not allowed to access this page/,
 		);
 
 		await other.context.close();
@@ -217,7 +217,7 @@ test.describe( 'The Server Information report', () => {
 		// A report has nothing to remember. Reading one three times should leave
 		// the site exactly as it was.
 		expect( Object.keys( settings ).some( ( key ) => key.includes( 'serverinfo' ) ) ).toBe(
-			false
+			false,
 		);
 	} );
 } );
