@@ -101,7 +101,7 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 
 ## Changelog
 ### 3.0.0
-* BREAKING: Requires WordPress 6.8 and PHP 8.2, up from 4.0 and 7.2. A site on an older stack will not be offered the update
+* BREAKING: Requires WordPress 6.8 and PHP 8.2, up from 4.0 and 7.2.
 * BREAKING: The report moved from `Dashboard → WP-ServerInfo` to `Tools → WP-ServerInfo`. The page slug is unchanged, so the URL goes from `index.php?page=wp-serverinfo` to `tools.php?page=wp-serverinfo`
 * BREAKING: All thirty global functions are gone, with no deprecation shims — `format_filesize()`, `format_php_size()`, `display_serverinfo()`, `get_mysql_version()`, `get_serverload()`, `get_gd_version()` and the rest are now methods on `WP_ServerInfo_Format`, `WP_ServerInfo_MySQL`, `WP_ServerInfo_PHP` and `WP_ServerInfo_Cache`. They were never a documented API, and their generic names collided with other plugins
 * NEW: `wp_serverinfo_memcached_server` and `wp_serverinfo_redis_server` filters to point the memcached and Redis panels at a server other than localhost
@@ -124,15 +124,15 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 * CHANGED: Add a PHPUnit test suite, both single site and multisite, and GitHub Actions CI
 
 ## Upgrade Notice
+
 ### 3.0.0
-The first release since 2.0.0, and it is a rewrite. Five things are worth knowing before you update.
 
-**Your site must be on WordPress 6.8 or later and PHP 8.2 or later.** 2.0.0 asked for WordPress 4.0 and PHP 7.2, so this is a large jump and it is the break most likely to actually bite: a site on an older stack simply will not be offered the update. Check `WP-Admin -> Tools -> Site Health -> Info -> Server` for your PHP version; if it is below 8.2, ask your host to move you up. PHP 8.1 and everything before it stopped receiving security fixes.
+Requires WordPress 6.8 and PHP 8.2, up from WordPress 4.0 and PHP 7.2.
 
-**The screen moved from Dashboard to Tools.** It was at `Dashboard → WP-ServerInfo`; it is now at `Tools → WP-ServerInfo`. The page slug has not changed, so update any bookmark from `/wp-admin/index.php?page=wp-serverinfo` to `/wp-admin/tools.php?page=wp-serverinfo`. It is a report about your host rather than a Dashboard panel, and Tools is where WordPress keeps that sort of screen. The Server Information dashboard widget stays exactly where it was, and its "View all" button follows the page.
+**The screen moved from Dashboard to Tools**, from `/wp-admin/index.php?page=wp-serverinfo` to `/wp-admin/tools.php?page=wp-serverinfo`. The page slug is unchanged. It is a report about your host rather than a Dashboard panel, and Tools is where WordPress keeps that sort of screen. The Server Information dashboard widget stays where it was, and its "View all" button follows the page.
 
-**All thirty of the plugin's global functions are gone.** `format_filesize()`, `format_php_size()`, `get_mysql_version()`, `get_serverload()`, `get_gd_version()`, `display_serverinfo()` and the rest are now methods on `WP_ServerInfo_Format`, `WP_ServerInfo_MySQL`, `WP_ServerInfo_PHP` and `WP_ServerInfo_Cache`. They were never a documented API and there are no compatibility shims, so a theme or snippet calling one will fatal. The names were generic enough to collide anyway — WP-DownloadManager defines a `format_filesize()` of its own, and whichever plugin loaded first won.
+**All thirty global functions are gone.** `format_filesize()`, `format_php_size()`, `get_mysql_version()`, `get_serverload()`, `get_gd_version()`, `display_serverinfo()` and the rest are methods on `WP_ServerInfo_Format`, `WP_ServerInfo_MySQL`, `WP_ServerInfo_PHP` and `WP_ServerInfo_Cache`. They were never a documented API and there are no shims, so a theme or snippet calling one will fatal. The names were generic enough to collide anyway — WP-DownloadManager defines a `format_filesize()` of its own, and whichever plugin loaded first won.
 
-**The two cache filters are named `wp_serverinfo_memcached_server` and `wp_serverinfo_redis_server`.** They are new in 3.0.0 rather than renamed, so nothing existing breaks; they are listed here because they are the only way to point the memcached and Redis panels at a server that is not on localhost. There is also a new `wp_serverinfo_capability` filter if you want to hand the screen to somebody other than an administrator.
+**Three new filters.** `wp_serverinfo_memcached_server` and `wp_serverinfo_redis_server` are the only way to point those two panels at a server that is not on localhost; `wp_serverinfo_capability` hands the screen to somebody other than an administrator. All three are new rather than renamed, so nothing existing breaks.
 
-**The plugin now stores one row in `wp_options`.** `wp_serverinfo_version` records the version last run so a future upgrade knows what it is upgrading from. There is still nothing to configure and still no settings screen. Deleting the plugin from the Plugins screen removes that row, and also clears the per-user dashboard state WordPress recorded whenever somebody closed, hid or reordered the widget — which 2.0.0 left in the database forever.
+**The plugin now stores one row**, `wp_serverinfo_version`, recording the version last run so a future upgrade knows what it is upgrading from. There is still no settings screen. Deleting the plugin removes that row and also clears the per-user dashboard state WordPress recorded whenever somebody closed, hid or reordered the widget, which 2.0.0 left in the database forever.
