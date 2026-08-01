@@ -2,221 +2,120 @@
 /**
  * The release invariants, asserted from the source and from the stored rows.
  *
- * These are the house rules every plugin in this family shares, and every one of
- * them has been broken by an ordinary edit at some point: a header field that
- * drifted out of the canonical order, a new directory shipped without its
- * silence guard, a version bumped in one file of three, a readme header line
- * that lost the two trailing spaces holding it apart from the next.
- *
- * They are the things a restructuring quietly breaks and nothing notices until a
- * release fails its pre-flight months later, so catching them here is far
- * cheaper than catching them there.
+ * Everything §7.2 asks of all nineteen plugins now lives in
+ * Plugin_Metadata_TestCase. What is left here is what only WP-ServerInfo can
+ * say: the version it ships, its class prefix, the thirty global functions its
+ * Upgrade Notice has to account for, the three filters it fires, the fact that
+ * a read-only report stores nothing, and the widget id the uninstaller has to
+ * spell out because it runs with the plugin inactive.
  *
  * @package WP-ServerInfo
  */
 
 /**
+ * WP-ServerInfo's half of the shared metadata contract.
+ *
  * @coversNothing
  */
-class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
-
-	const VERSION = '3.0.0';
+class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 
 	/**
-	 * The main plugin file.
+	 * The version this release ships.
 	 *
 	 * @return string
 	 */
-	protected function plugin_file() {
-		return wp_serverinfo_test_read( 'wp-serverinfo.php' );
+	protected function expected_version() {
+		return '3.0.0';
 	}
 
 	/**
-	 * The readme.
+	 * The prefix every class the plugin declares carries.
 	 *
 	 * @return string
 	 */
-	protected function readme() {
-		return wp_serverinfo_test_read( 'README.md' );
+	protected function class_prefix() {
+		return 'WP_ServerInfo';
 	}
 
 	/**
-	 * Every directory in the repo that holds at least one PHP file.
+	 * What a site owner updating from the released 2.0.0 would notice.
 	 *
-	 * The filter prunes rather than discarding after the fact. A plain filter on
-	 * a RecursiveIteratorIterator descends into vendor/ and node_modules/ before
-	 * throwing the results away, which is slow enough to look like a hang.
+	 * The screen moved from Dashboard to Tools, so the old URL is bookmarked
+	 * and has to appear beside the new one. Thirty global functions became
+	 * methods on four classes with no shims, and the names were generic enough
+	 * that other plugins defined some of them too -- so a theme or snippet
+	 * calling one fatals. The three filters are new rather than renamed, but
+	 * they are the only way to reach a Memcached or Redis server that is not on
+	 * localhost, which is the reason anybody would go looking.
 	 *
-	 * @return string[] Absolute paths, plugin root included.
+	 * @return string[]
 	 */
-	protected function php_directories() {
-		$root  = dirname( __DIR__ );
-		$found = array();
-
-		$directories = new RecursiveCallbackFilterIterator(
-			new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ),
-			function ( $file ) {
-				if ( ! $file->isDir() ) {
-					return true;
-				}
-
-				// artifacts/ is a Playwright output directory: gitignored, never
-				// deployed, and recreated on any failing run.
-				return ! in_array( $file->getFilename(), array( 'vendor', 'node_modules', '.git', 'artifacts' ), true );
-			}
+	protected function upgrade_notice_subjects() {
+		return array(
+			'WordPress 6.8',
+			'PHP 8.2',
+			'index.php?page=wp-serverinfo',
+			'tools.php?page=wp-serverinfo',
+			'`format_filesize()`',
+			'`format_php_size()`',
+			'`get_mysql_version()`',
+			'`get_serverload()`',
+			'`get_gd_version()`',
+			'`display_serverinfo()`',
+			'`WP_ServerInfo_Format`',
+			'`WP_ServerInfo_MySQL`',
+			'`WP_ServerInfo_PHP`',
+			'`WP_ServerInfo_Cache`',
+			'`wp_serverinfo_capability`',
+			'`wp_serverinfo_memcached_server`',
+			'`wp_serverinfo_redis_server`',
+			'`wp_serverinfo_version`',
 		);
-
-		foreach ( new RecursiveIteratorIterator( $directories ) as $file ) {
-			if ( 'php' === strtolower( $file->getExtension() ) ) {
-				$found[ dirname( $file->getPathname() ) ] = true;
-			}
-		}
-
-		return array_keys( $found );
-	}
-
-	public function test_version_matches_everywhere() {
-		$this->assertStringContainsString( ' * Version: ' . self::VERSION, $this->plugin_file() );
-		$this->assertStringContainsString( "define( 'WP_SERVERINFO_VERSION', '" . self::VERSION . "' );", $this->plugin_file() );
-		$this->assertStringContainsString( 'Stable tag: ' . self::VERSION, $this->readme() );
-		$this->assertSame( self::VERSION, WP_SERVERINFO_VERSION );
-	}
-
-	public function test_the_changelog_has_a_section_for_this_version() {
-		$this->assertStringContainsString( '### ' . self::VERSION . "\n", $this->readme() );
 	}
 
 	/**
-	 * The order is neither alphabetical nor intuitive -- Requires at least and
-	 * Requires PHP sit before Author -- so it is copied, never composed.
-	 */
-	public function test_the_plugin_header_fields_are_in_the_canonical_order() {
-		$expected = array(
-			'Plugin Name',
-			'Plugin URI',
-			'Description',
-			'Version',
-			'Requires at least',
-			'Requires PHP',
-			'Author',
-			'Author URI',
-			'License',
-			'License URI',
-			'Text Domain',
-			'Domain Path',
-		);
-
-		preg_match( '#^<\?php\s*/\*\*(.+?)\*/#s', $this->plugin_file(), $matches );
-		$this->assertNotEmpty( $matches, 'The plugin file must open with a docblock header.' );
-
-		preg_match_all( '/^\s*\*\s*([A-Z][A-Za-z ]*?):\s/m', $matches[1], $fields );
-
-		$this->assertSame( $expected, $fields[1] );
-	}
-
-	/**
-	 * The readme order differs from the PHP one on purpose: Requires PHP comes
-	 * after Stable tag here. They are not to be harmonised.
-	 */
-	public function test_the_readme_header_fields_are_in_the_canonical_order() {
-		$expected = array(
-			'Contributors',
-			'Donate link',
-			'Tags',
-			'Requires at least',
-			'Tested up to',
-			'Stable tag',
-			'Requires PHP',
-			'License',
-			'License URI',
-		);
-
-		$header = substr( $this->readme(), 0, (int) strpos( $this->readme(), "\n\n" ) );
-
-		preg_match_all( '/^([A-Z][A-Za-z ]*?):\s/m', $header, $fields );
-
-		$this->assertSame( $expected, $fields[1] );
-	}
-
-	public function test_requires_headers_match_readme() {
-		$this->assertStringContainsString( ' * Requires at least: 6.8', $this->plugin_file() );
-		$this->assertStringContainsString( ' * Requires PHP: 8.2', $this->plugin_file() );
-		$this->assertStringContainsString( 'Requires at least: 6.8', $this->readme() );
-		$this->assertStringContainsString( 'Requires PHP: 8.2', $this->readme() );
-	}
-
-	/**
-	 * Header lines need two trailing spaces to render as separate lines.
+	 * This plugin keeps no version marker row (§2.1).
 	 *
-	 * Markdown joins consecutive lines into one paragraph unless each is ended
-	 * with a hard line break, so a missing pair renders as
-	 * "License: GPLv2 or later License URI: https://..." on GitHub. It is
-	 * invisible in the source and in a diff, which is exactly why it wants a
-	 * test. The last line needs none, having nothing after it to run into.
+	 * Five read-only tables describing the host, plus a dashboard widget. No
+	 * settings, no schema and no migration, so there is nothing for a marker to
+	 * mark.
+	 *
+	 * @return bool
 	 */
-	public function test_every_readme_header_line_keeps_its_line_break() {
-		$header = substr( $this->readme(), 0, (int) strpos( $this->readme(), "\n\n" ) );
-		$lines  = explode( "\n", $header );
-
-		// The first line is the "# WP-ServerInfo" heading, not a header field.
-		$fields = array_slice( $lines, 1 );
-		$last   = array_pop( $fields );
-
-		$this->assertCount( 8, $fields, 'Nine header fields, eight of them followed by another.' );
-
-		foreach ( $fields as $line ) {
-			$this->assertStringEndsWith(
-				'  ',
-				$line,
-				"Needs two trailing spaces or it merges with the line below: {$line}"
-			);
-		}
-
-		$this->assertStringStartsWith( 'License URI:', $last );
-		$this->assertSame( rtrim( $last ), $last, 'The last header line takes no trailing spaces.' );
+	protected function has_version_row() {
+		return false;
 	}
 
+	/**
+	 * This plugin keeps no settings row either, and so has no sanitiser.
+	 *
+	 * @return bool
+	 */
+	protected function has_settings_row() {
+		return false;
+	}
+
+	/**
+	 * The one row uninstall will ever find.
+	 *
+	 * Written by hand: nothing in the plugin writes this any more. An early
+	 * build of the unreleased 3.0.0 did, and uninstall.php is the only thing
+	 * that will ever take it off a site that ran that build.
+	 *
+	 * @return void
+	 */
+	protected function seed_option_rows() {
+		update_option( 'wp_serverinfo_version', array( 'plugin' => '3.0.0' ) );
+	}
+
+	/**
+	 * At most five tags: wordpress.org shows five and ignores the rest.
+	 */
 	public function test_the_readme_lists_at_most_five_tags() {
 		preg_match( '/^Tags:\s*(.+?)\s*$/m', $this->readme(), $matches );
 
 		$this->assertNotEmpty( $matches, 'The readme must carry a Tags line.' );
 		$this->assertLessThanOrEqual( 5, count( explode( ',', $matches[1] ) ) );
-	}
-
-	/**
-	 * Bare versions: "### 3.0.0", never "### Version 3.0.0".
-	 */
-	public function test_every_changelog_heading_is_a_bare_version() {
-		$this->assertSame( 0, preg_match( '/^### Version /m', $this->readme() ) );
-	}
-
-	public function test_canonical_lesterchan_urls() {
-		$this->assertSame(
-			'https://lesterchan.net/portfolio/programming/php/',
-			$this->header_field( 'Plugin URI' )
-		);
-		$this->assertSame( 'https://lesterchan.net', $this->header_field( 'Author URI' ) );
-		$this->assertSame( 'https://lesterchan.net/site/donation/', $this->readme_field( 'Donate link' ) );
-		$this->assertSame(
-			'https://www.gnu.org/licenses/gpl-2.0.html',
-			$this->header_field( 'License URI' )
-		);
-		$this->assertSame( 'https://www.gnu.org/licenses/gpl-2.0.html', $this->readme_field( 'License URI' ) );
-	}
-
-	/**
-	 * One name, in every plugin. A second contributor has to be added on
-	 * wordpress.org as well, so a name here that is not on the listing silently
-	 * does nothing.
-	 */
-	public function test_contributors_is_gamerz_only() {
-		$this->assertSame( 'GamerZ', $this->readme_field( 'Contributors' ) );
-	}
-
-	public function test_text_domain_is_the_plugin_slug() {
-		$this->assertSame( 'wp-serverinfo', $this->header_field( 'Text Domain' ) );
-		$this->assertSame( '/languages', $this->header_field( 'Domain Path' ) );
-		$this->assertSame( 'wp-serverinfo', WP_SERVERINFO_SLUG );
 	}
 
 	/**
@@ -241,30 +140,10 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * The second-level headings are a closed set in a fixed order.
+	 * Donations is mandated wording, and its position is mandated too.
 	 *
-	 * Third-level ones are not: Features, the usage subsections and every
-	 * changelog version live below these.
-	 */
-	public function test_readme_sections_are_the_canonical_set() {
-		preg_match_all( '/^## (.+?)\s*$/m', $this->readme(), $sections );
-
-		$this->assertSame(
-			array(
-				'Description',
-				'Usage',
-				'Frequently Asked Questions',
-				'Screenshots',
-				'Changelog',
-				'Upgrade Notice',
-			),
-			$sections[1]
-		);
-	}
-
-	/**
-	 * Donations is mandated wording, and its position is mandated too: the last
-	 * h3 of ## Description, so it does not end up under Usage or the FAQ.
+	 * It is the last h3 of ## Description, so it cannot end up under Usage or
+	 * the FAQ.
 	 */
 	public function test_donations_is_the_last_h3_of_the_description() {
 		$readme      = $this->readme();
@@ -288,70 +167,33 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * Five prefixes, and nothing else.
+	 * The raised floors need a BREAKING changelog line, not only a notice.
 	 *
-	 * The listing on wordpress.org renders the changelog verbatim, so a stray
-	 * "Important:" or a lowercase "New:" is visible to every reader of it.
+	 * The shared Upgrade Notice test covers the notice half. This is the other
+	 * half of §14.1: the floors are themselves a breaking change, and the one
+	 * most likely to bite, because a site on an older stack is simply never
+	 * offered the update with nothing anywhere to say why.
 	 */
-	public function test_changelog_prefixes_are_canonical() {
-		$readme    = $this->readme();
-		$changelog = substr( $readme, (int) strpos( $readme, '## Changelog' ) );
-		$changelog = substr( $changelog, 0, (int) strpos( $changelog, "\n## Upgrade Notice" ) );
-
-		preg_match_all( '/^\* (.+?):/m', $changelog, $bullets );
-
-		$this->assertNotEmpty( $bullets[1], 'The changelog must carry bullets.' );
-
-		foreach ( $bullets[1] as $prefix ) {
-			$this->assertContains(
-				$prefix . ':',
-				array( 'BREAKING:', 'NEW:', 'CHANGED:', 'FIXED:', 'NOTE:' ),
-				"'{$prefix}:' is not one of the five allowed changelog prefixes."
-			);
-		}
-	}
-
-	/**
-	 * The raised floors are themselves a breaking change (section 14.1), and the
-	 * one most likely to bite: a site on an older stack is simply never offered
-	 * the update, with nothing anywhere to say why.
-	 */
-	public function test_the_upgrade_notice_covers_the_raised_floors() {
-		$readme = $this->readme();
-		$notice = substr( $readme, (int) strpos( $readme, '## Upgrade Notice' ) );
-
-		$this->assertStringContainsString( '### ' . self::VERSION, $notice );
-		$this->assertStringContainsString( 'WordPress 6.8', $notice );
-		$this->assertStringContainsString( 'PHP 8.2', $notice );
-
+	public function test_the_raised_floors_have_a_breaking_changelog_line() {
 		$this->assertMatchesRegularExpression(
 			'/^\* BREAKING: Requires WordPress 6\.8 and PHP 8\.2/m',
-			$readme,
+			$this->readme(),
 			'The floors need a BREAKING: changelog line as well as the notice.'
 		);
 	}
 
 	/**
-	 * Both surfaces moved into one menu entry under Tools in 3.0.0, so the
-	 * notice has to give the new URL -- the old one is bookmarked.
-	 */
-	public function test_the_upgrade_notice_records_the_screen_moving() {
-		$notice = substr( $this->readme(), (int) strpos( $this->readme(), '## Upgrade Notice' ) );
-
-		$this->assertStringContainsString( 'tools.php?page=wp-serverinfo', $notice );
-		$this->assertStringContainsString( 'index.php?page=wp-serverinfo', $notice );
-	}
-
-	/**
-	 * Every hook the plugin fires carries the plugin's prefix, and is named in
-	 * the readme so it is findable without reading the source.
+	 * Every hook the plugin fires carries its prefix, and is named in the readme.
+	 *
+	 * Three, and only three: two that point a panel at a server which is not on
+	 * localhost, and one that hands the screen to somebody other than an
+	 * administrator. A filter nobody can find is a filter nobody can use, so
+	 * the readme has to name each one.
 	 */
 	public function test_every_fired_hook_is_prefixed_and_documented() {
-		$code = wp_serverinfo_test_source_code();
-
 		preg_match_all(
 			"/(?:apply_filters|do_action)(?:_ref_array)?\(\s*'([a-z0-9_]+)'/",
-			$code,
+			wp_serverinfo_test_source_code(),
 			$hooks
 		);
 
@@ -373,12 +215,13 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * Each one needs a docblock carrying an @since immediately above it, per WPCS.
+	 * Each fired hook needs a docblock carrying an @since directly above it.
 	 *
-	 * Asserted by reading the lines above the call rather than by one regex over
-	 * the whole call site, because the three are spelled differently -- one is a
-	 * return statement, two are assignments -- and a pattern loose enough to
-	 * cover all three is loose enough to match a hook with nothing above it.
+	 * Asserted by reading the lines above the call rather than by one regex
+	 * over the whole call site, because the three are spelled differently --
+	 * one is a return statement, two are assignments -- and a pattern loose
+	 * enough to cover all three is loose enough to match a hook with nothing
+	 * above it.
 	 */
 	public function test_every_fired_hook_has_a_since_tag() {
 		$found = 0;
@@ -412,20 +255,16 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * The catalogue comes from translate.wordpress.org, and since WP 6.7 calling
-	 * load_plugin_textdomain() this early trips _doing_it_wrong.
-	 */
-	public function test_the_plugin_does_not_load_its_own_textdomain() {
-		$this->assertStringNotContainsString( 'load_plugin_textdomain', wp_serverinfo_test_source_code() );
-	}
-
-	/**
-	 * Every translation call must carry the plugin's own text domain.
+	 * Every translation call carries the plugin's own text domain.
 	 */
 	public function test_every_translation_call_uses_the_plugin_text_domain() {
-		$code = wp_serverinfo_test_source_code();
+		preg_match_all(
+			'/(?:__|_n|_x|esc_html__|esc_attr__|esc_html_e|esc_attr_e)\((.*?)\);/s',
+			wp_serverinfo_test_source_code(),
+			$calls
+		);
 
-		preg_match_all( '/(?:__|_n|_x|esc_html__|esc_attr__|esc_html_e|esc_attr_e)\((.*?)\);/s', $code, $calls );
+		$this->assertNotEmpty( $calls[1], 'The plugin makes at least one translation call.' );
 
 		foreach ( $calls[1] as $arguments ) {
 			$this->assertStringContainsString(
@@ -437,110 +276,25 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * The old forums.lesterchan.net is gone, and the rest of these had drifted
-	 * to http over twenty years. Code spans are exempt: they document input.
+	 * The old forums.lesterchan.net is gone, and the rest had drifted to http.
+	 *
+	 * Code spans are exempt: they document input rather than link anywhere.
 	 */
 	public function test_no_insecure_or_dead_links_remain() {
-		$readme = preg_replace( '/`[^`]*`/', '', $this->readme() );
+		$readme = (string) preg_replace( '/`[^`]*`/', '', $this->readme() );
 
 		$this->assertSame( 0, preg_match( '#http://#', $readme ), 'Every readme link must use https.' );
 		$this->assertSame( 0, preg_match( '#http://#', $this->plugin_file() ) );
 		$this->assertStringNotContainsString( 'forums.lesterchan.net', $readme );
 	}
 
-	public function test_every_directory_has_an_index_php() {
-		$directories = $this->php_directories();
-
-		$this->assertNotEmpty( $directories, 'The walk found no PHP at all, which cannot be right.' );
-
-		foreach ( $directories as $directory ) {
-			$this->assertFileExists(
-				$directory . '/index.php',
-				"{$directory} ships PHP and so needs an index.php silence guard."
-			);
-		}
-	}
-
-	public function test_the_guards_use_the_docblock_form() {
-		foreach ( $this->php_directories() as $directory ) {
-			$guard = (string) file_get_contents( $directory . '/index.php' );
-
-			// phpcbf cannot fix the one-line "// Silence is golden." form.
-			$this->assertStringContainsString( '/**', $guard, "{$directory}/index.php must use the docblock form." );
-			$this->assertStringContainsString( 'Silence is golden.', $guard );
-		}
-	}
-
-	public function test_the_gpl_licence_is_shipped() {
-		$licence = wp_serverinfo_test_read( 'LICENSE' );
-
-		$this->assertStringContainsString( 'GNU GENERAL PUBLIC LICENSE', $licence );
-		$this->assertStringContainsString( 'Version 2, June 1991', $licence );
-	}
-
 	/**
-	 * The catalogue is built by translate.wordpress.org, and Travis has been
-	 * dead for these repos for years.
-	 */
-	public function test_no_abandoned_build_or_translation_artefacts_ship() {
-		$root = dirname( __DIR__ );
-
-		$this->assertFileDoesNotExist( $root . '/.travis.yml' );
-		$this->assertFileDoesNotExist( $root . '/.wp-env.override.json' );
-		$this->assertDirectoryDoesNotExist( $root . '/languages' );
-		$this->assertDirectoryDoesNotExist( $root . '/.idea' );
-
-		foreach ( array( 'pot', 'po', 'mo' ) as $extension ) {
-			$this->assertSame(
-				array(),
-				(array) glob( $root . '/*.' . $extension ),
-				"No .{$extension} files: translate.wordpress.org builds the catalogue."
-			);
-		}
-	}
-
-	/**
-	 * WP-ServerInfo ships no JavaScript at all, which is the strongest form of
-	 * the house rule: nothing to enqueue, so nothing to depend on jQuery. There
-	 * is therefore no registered handle whose deps could be checked, and the
-	 * source assertion is the whole of it.
-	 */
-	public function test_no_jquery_is_enqueued() {
-		$code = wp_serverinfo_test_source_code();
-
-		$this->assertStringNotContainsStringIgnoringCase( 'jquery', $code );
-		$this->assertStringNotContainsString(
-			'wp_enqueue_script(',
-			$code,
-			'The plugin registers no scripts, so it can declare no dependencies.'
-		);
-		$this->assertSame( array(), (array) glob( dirname( __DIR__ ) . '/js/*.js' ) );
-		$this->assertDirectoryDoesNotExist( dirname( __DIR__ ) . '/js' );
-	}
-
-	/**
-	 * No plugin in this family ships a second, mirrored stylesheet: the admin
-	 * screens use direction-neutral markup instead, so one sheet would serve
-	 * both directions. This one ships no stylesheet at all -- the direction is a
-	 * dir attribute, which is why there is no css/ directory to keep in step.
-	 */
-	public function test_no_rtl_stylesheet_is_registered() {
-		$root = dirname( __DIR__ );
-
-		$this->assertSame( array(), (array) glob( $root . '/*-rtl.css' ) );
-		$this->assertSame( array(), (array) glob( $root . '/css/*-rtl.css' ) );
-		$this->assertStringNotContainsString(
-			'wp_style_add_data',
-			wp_serverinfo_test_source_code(),
-			"No plugin registers 'rtl' style data."
-		);
-	}
-
-	/**
-	 * Section 4.4 forbids these outright, and section 5 forbids !important. Both
-	 * were in the 2.0.0 screens, and both are gone; nothing renders here, so
-	 * this is the source-level half of the assertion the screen tests make on
-	 * the rendered markup.
+	 * No inline styling survives in the source.
+	 *
+	 * §4.4 forbids these outright and §5 forbids !important. Both were in the
+	 * 2.0.0 screens, and both are gone; nothing renders here, so this is the
+	 * source-level half of the assertion the screen tests make on the rendered
+	 * markup.
 	 */
 	public function test_no_inline_styling_survives_in_the_source() {
 		$code = wp_serverinfo_test_source_code();
@@ -555,9 +309,10 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	 * The widget id lives in two places and has to agree in both.
 	 *
 	 * The uninstaller runs with the plugin inactive, so it cannot read
-	 * WP_SERVERINFO_WIDGET_ID and spells the string out instead. If the constant
-	 * ever changes, the uninstaller silently stops finding the user meta it is
-	 * there to remove, which nothing else would catch.
+	 * WP_SERVERINFO_WIDGET_ID and spells the string out instead. If the
+	 * constant ever changes, the uninstaller silently stops finding the user
+	 * meta it is there to remove, which nothing else would catch -- least of
+	 * all the shared uninstall test, which only walks the options table.
 	 */
 	public function test_the_uninstaller_agrees_with_the_widget_id_constant() {
 		$this->assertSame( 'dashboard_serverinfo', WP_SERVERINFO_WIDGET_ID );
@@ -570,11 +325,11 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 	/**
 	 * The plugin writes no option row at all, ever.
 	 *
-	 * WP-ServerInfo is five read-only tables describing the host and a dashboard
-	 * widget. It keeps no state between requests, so under STANDARDS.md 2.1 it
-	 * stores nothing -- not a settings row, and not the version markers either.
-	 * Those exist to tell a migration what it is upgrading from, and there is no
-	 * migration and nothing to migrate.
+	 * Stronger than the two shared opt-out assertions, which each name one row.
+	 * WP-ServerInfo is a read-only report and a dashboard widget; it keeps no
+	 * state between requests, so under §2.1 it stores nothing -- not a settings
+	 * row, not the version markers, and not some third row a later change might
+	 * invent.
 	 */
 	public function test_the_plugin_stores_nothing() {
 		// admin_init is deliberately not fired: core's callbacks on it send
@@ -582,85 +337,24 @@ class WP_ServerInfo_Metadata_Test extends WP_ServerInfo_TestCase {
 		do_action( 'plugins_loaded' );
 		do_action( 'init' );
 
-		global $wpdb;
-
-		$rows = (array) $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-				$wpdb->esc_like( 'wp_serverinfo_' ) . '%'
-			)
-		);
-
-		$this->assertSame( array(), $rows, 'WP-ServerInfo wrote an option row; it is meant to store nothing at all.' );
-	}
-
-	/**
-	 * There is still no settings row, and nothing that would build one.
-	 */
-	public function test_no_settings_row_and_no_settings_api() {
-		$this->assertFalse(
-			get_option( 'wp_serverinfo_options' ),
-			'WP-ServerInfo is exempt from the settings row; reinstating one needs the sanitiser test back.'
-		);
-
-		$code = wp_serverinfo_test_source_code();
-
-		$this->assertStringNotContainsString( 'register_setting', $code );
-		$this->assertStringNotContainsString( 'add_settings_field', $code );
-		$this->assertStringNotContainsString( 'sanitize_callback', $code );
-	}
-
-	/**
-	 * Deleting the plugin leaves nothing behind.
-	 *
-	 * The assertion is deliberately a LIKE over wp_options rather than a
-	 * delete_option() check: a row added later and forgotten in uninstall.php is
-	 * exactly the failure this is here to catch. The multisite config runs the
-	 * same test through uninstall.php's get_sites() branch.
-	 */
-	public function test_uninstall_removes_every_option_row() {
-		// Written by hand: nothing in the plugin writes this any more. An early
-		// build of the unreleased 3.0.0 did, and uninstall is the only thing that
-		// will ever take it off a site that ran that build.
-		update_option( 'wp_serverinfo_version', array( 'plugin' => '3.0.0' ) );
-
-		$this->assertNotEmpty(
-			$this->stored_option_names(),
-			'There should be rows to remove before uninstall runs.'
-		);
-
-		$this->run_uninstall();
-
-		wp_cache_flush();
-
 		$this->assertSame(
 			array(),
 			$this->stored_option_names(),
-			'uninstall.php must remove every wp_serverinfo_* row.'
+			'WP-ServerInfo wrote an option row; it is meant to store nothing at all.'
 		);
 	}
 
 	/**
-	 * A field from the main plugin file's header docblock.
+	 * None of the Settings API scaffolding is here either.
 	 *
-	 * @param string $field Field name.
-	 * @return string
+	 * The shared opt-out covers the row and register_setting(). These two are
+	 * the other halves of a settings screen, and a plugin growing one of them
+	 * is a plugin about to grow a row.
 	 */
-	protected function header_field( $field ) {
-		$data = get_file_data( dirname( __DIR__ ) . '/wp-serverinfo.php', array( $field => $field ) );
+	public function test_no_settings_api_scaffolding_exists() {
+		$code = wp_serverinfo_test_source_code();
 
-		return $data[ $field ];
-	}
-
-	/**
-	 * A field from the readme's header block.
-	 *
-	 * @param string $field Field name.
-	 * @return string
-	 */
-	protected function readme_field( $field ) {
-		preg_match( '/^' . preg_quote( $field, '/' ) . ':\s*(.+?)\s*$/m', $this->readme(), $matches );
-
-		return isset( $matches[1] ) ? $matches[1] : '';
+		$this->assertStringNotContainsString( 'add_settings_field', $code );
+		$this->assertStringNotContainsString( 'sanitize_callback', $code );
 	}
 }
