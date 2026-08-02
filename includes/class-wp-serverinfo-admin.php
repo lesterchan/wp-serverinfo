@@ -90,7 +90,7 @@ class WP_ServerInfo_Admin {
 	 */
 	public static function add_page() {
 		add_management_page(
-			__( 'WP-ServerInfo', 'wp-serverinfo' ),
+			__( 'Server Information', 'wp-serverinfo' ),
 			__( 'WP-ServerInfo', 'wp-serverinfo' ),
 			self::capability( 'report' ),
 			self::PAGE,
