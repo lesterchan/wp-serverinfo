@@ -18,7 +18,7 @@ There is nothing to configure and no settings screen. Every figure is read live 
 
 ### Features
 * A Server Information widget on your Dashboard with the figures you look up most often
-* A full report at `Tools → WP-ServerInfo`, in five tabs
+* A full report at `Tools -> WP-ServerInfo`, in five tabs
  * General — OS, web server, hostname, IP and port, document root, server date and load, and the headline PHP and MySQL numbers side by side
  * PHP — version, Zend Engine, SAPI, loaded configuration file, loaded extensions, and every `php.ini` directive with its local and master value
  * MySQL — version and every server variable
@@ -32,7 +32,7 @@ I spent most of my free time creating, updating, maintaining and supporting thes
 ## Usage
 Activate the plugin and you are done.
 
-The Server Information widget appears on your Dashboard, and the full report is at `Tools → WP-ServerInfo`. Both require the `manage_options` capability, because between them they report your document root, your server's IP address and your whole PHP and MySQL configuration.
+The Server Information widget appears on your Dashboard, and the full report is at `Tools -> WP-ServerInfo`. Both require the `manage_options` capability, because between them they report your document root, your server's IP address and your whole PHP and MySQL configuration.
 
 ### The memcached and Redis tabs
 Each tab appears only when the matching PHP extension is loaded, and by default each reports on the server running on this machine — `localhost:11211` for memcached, `127.0.0.1:6379` for Redis. If your cache lives somewhere else, point the plugin at it from your theme's `functions.php` or a small must-use plugin:
@@ -71,7 +71,7 @@ add_filter(
 ## Frequently Asked Questions
 
 ### Where did the screen go? It used to be under Dashboard
-It moved to `Tools → WP-ServerInfo` in 3.0.0. It is a report about your host rather than a Dashboard panel, and Tools is where WordPress keeps that kind of screen. The Dashboard widget has not moved, and its "View all" button goes to the new address.
+It moved to `Tools -> WP-ServerInfo` in 3.0.0. It is a report about your host rather than a Dashboard panel, and Tools is where WordPress keeps that kind of screen. The Dashboard widget has not moved, and its "View all" button goes to the new address.
 
 ### The memcached or Redis tab is missing
 The tab appears only when the corresponding PHP extension is loaded — Memcached or Memcache for one, phpredis for the other. Check the PHP tab's Loaded Extensions row. Installing an object cache *drop-in* is not the same thing as having the extension.
@@ -102,7 +102,7 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 ## Changelog
 ### 3.0.0
 * BREAKING: Requires WordPress 6.8 and PHP 8.2, up from 4.0 and 7.2.
-* BREAKING: The report moved from `Dashboard → WP-ServerInfo` to `Tools → WP-ServerInfo`. The page slug is unchanged, so the URL goes from `index.php?page=wp-serverinfo` to `tools.php?page=wp-serverinfo`
+* BREAKING: The report moved from `Dashboard -> WP-ServerInfo` to `Tools -> WP-ServerInfo`. The page slug is unchanged, so the URL goes from `index.php?page=wp-serverinfo` to `tools.php?page=wp-serverinfo`
 * BREAKING: All thirty global functions are gone, with no deprecation shims — `format_filesize()`, `format_php_size()`, `display_serverinfo()`, `get_mysql_version()`, `get_serverload()`, `get_gd_version()` and the rest are now methods on `WP_ServerInfo_Format`, `WP_ServerInfo_MySQL`, `WP_ServerInfo_PHP` and `WP_ServerInfo_Cache`. They were never a documented API, and their generic names collided with other plugins
 * NEW: `wp_serverinfo_memcached_server` and `wp_serverinfo_redis_server` filters to point the memcached and Redis panels at a server other than localhost
 * NEW: `wp_serverinfo_capability` filter, so the report and the widget can be handed to somebody other than an administrator, separately
