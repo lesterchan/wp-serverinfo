@@ -132,7 +132,7 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 			$this->markTestSkipped( 'The Redis extension is installed in this environment.' );
 		}
 
-		$this->assertFalse( WP_ServerInfo_Cache::redis_stats() );
+		$this->assertFalse( WP_ServerInfo_Cache::redis_stats(), 'With the extension missing, redis stats report false rather than fatal.' );
 	}
 
 	public function test_memcached_stats_return_false_when_the_extension_is_missing() {
@@ -140,7 +140,7 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 			$this->markTestSkipped( 'A memcached extension is installed in this environment.' );
 		}
 
-		$this->assertFalse( WP_ServerInfo_Cache::memcached_stats() );
+		$this->assertFalse( WP_ServerInfo_Cache::memcached_stats(), 'With the extension missing, memcached stats report false rather than fatal.' );
 	}
 
 	/**

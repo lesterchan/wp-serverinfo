@@ -97,10 +97,12 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 
 	public function test_the_two_admin_surfaces_are_hooked() {
 		$this->assertNotFalse(
-			has_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'add_page' ) )
+			has_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'add_page' ) ),
+			'The settings page is hooked onto admin_menu.'
 		);
 		$this->assertNotFalse(
-			has_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) )
+			has_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) ),
+			'The dashboard widget is hooked onto wp_dashboard_setup.'
 		);
 	}
 
@@ -129,8 +131,8 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	public function test_main_file_declares_no_functions_or_classes() {
 		$source = $this->main_file();
 
-		$this->assertDoesNotMatchRegularExpression( '/^\s*function\s+\w+\s*\(/m', $source );
-		$this->assertDoesNotMatchRegularExpression( '/^\s*class\s+\w+/m', $source );
+		$this->assertDoesNotMatchRegularExpression( '/^\s*function\s+\w+\s*\(/m', $source, 'The main file declares no functions; they belong to the classes.' );
+		$this->assertDoesNotMatchRegularExpression( '/^\s*class\s+\w+/m', $source, 'The main file declares no classes; each lives in its own file.' );
 	}
 
 	/**
@@ -163,15 +165,15 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 		$root = dirname( __DIR__ );
 
 		foreach ( array( '', '/includes', '/tests', '/bin' ) as $dir ) {
-			$this->assertFileExists( $root . $dir . '/index.php' );
+			$this->assertFileExists( $root . $dir . '/index.php', $dir . ' holds PHP but carries no silence guard.' );
 		}
 	}
 
 	public function test_plugin_declares_its_floors() {
 		$source = $this->main_file();
 
-		$this->assertMatchesRegularExpression( '/^ \* Requires at least: 6\.8$/m', $source );
-		$this->assertMatchesRegularExpression( '/^ \* Requires PHP: 8\.2$/m', $source );
+		$this->assertMatchesRegularExpression( '/^ \* Requires at least: 6\.8$/m', $source, 'The plugin header declares the supported WordPress floor.' );
+		$this->assertMatchesRegularExpression( '/^ \* Requires PHP: 8\.2$/m', $source, 'The plugin header declares the supported PHP floor.' );
 	}
 
 	/**

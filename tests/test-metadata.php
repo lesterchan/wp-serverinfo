@@ -115,7 +115,7 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 		preg_match( '/^Tags:\s*(.+?)\s*$/m', $this->readme(), $matches );
 
 		$this->assertNotEmpty( $matches, 'The readme must carry a Tags line.' );
-		$this->assertLessThanOrEqual( 5, count( explode( ',', $matches[1] ) ) );
+		$this->assertLessThanOrEqual( 5, count( explode( ',', $matches[1] ) ), 'wordpress.org reads at most five tags, so a sixth is silently dropped.' );
 	}
 
 	/**
@@ -301,8 +301,8 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 
 		$this->assertStringNotContainsString( '!important', $code );
 		$this->assertStringNotContainsString( '<style', $code );
-		$this->assertDoesNotMatchRegularExpression( '/\s(style|valign|align)=/', $code );
-		$this->assertDoesNotMatchRegularExpression( '/<(td|th|table|div)[^>]*\swidth=/', $code );
+		$this->assertDoesNotMatchRegularExpression( '/\s(style|valign|align)=/', $code, 'The source still carries inline styling where a stylesheet belongs.' );
+		$this->assertDoesNotMatchRegularExpression( '/<(td|th|table|div)[^>]*\swidth=/', $code, 'The source still sets a width attribute where CSS belongs.' );
 	}
 
 	/**

@@ -219,7 +219,7 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 		$html = $this->render( 'general' );
 
 		foreach ( array( 'general', 'php', 'mysql' ) as $tab ) {
-			$this->assertStringContainsString( 'tab=' . $tab, $html );
+			$this->assertStringContainsString( 'tab=' . $tab, $html, 'The general tab does not link to the ' . $tab . ' tab.' );
 		}
 	}
 
@@ -249,8 +249,8 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertStringNotContainsString( 'translators:', $html );
 		$this->assertStringNotContainsString( '<?php', $html );
-		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html );
-		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html );
+		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html, 'An entity has been double-escaped somewhere in the screen.' );
+		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html, 'A PHP undefined-key diagnostic leaked into the screen.' );
 	}
 
 	/**
@@ -268,7 +268,7 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 		$this->assertStringNotContainsString( '<style', $html );
 		$this->assertStringNotContainsString( 'style=', $html );
 		$this->assertStringNotContainsString( '!important', $html );
-		$this->assertDoesNotMatchRegularExpression( '/\s(width|valign|align)=/', $html );
+		$this->assertDoesNotMatchRegularExpression( '/\s(width|valign|align)=/', $html, 'The screen uses a presentational attribute where a core class belongs.' );
 
 		$this->assertStringContainsString( 'class="wrap"', $html );
 		$this->assertStringContainsString( 'nav-tab-wrapper', $html );

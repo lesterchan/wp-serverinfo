@@ -22,16 +22,16 @@ class WP_ServerInfo_MySQL_Test extends WP_ServerInfo_TestCase {
 	 * fired on any modern server.
 	 */
 	public function test_absent_variable_returns_null_without_warning() {
-		$this->assertNull( WP_ServerInfo_MySQL::variable( 'wp_serverinfo_no_such_variable' ) );
+		$this->assertNull( WP_ServerInfo_MySQL::variable( 'wp_serverinfo_no_such_variable' ), 'An absent variable reads back null rather than warning.' );
 	}
 
 	public function test_known_variable_returns_its_value() {
-		$this->assertNotNull( WP_ServerInfo_MySQL::variable( 'max_connections' ) );
-		$this->assertIsNumeric( WP_ServerInfo_MySQL::max_connections() );
+		$this->assertNotNull( WP_ServerInfo_MySQL::variable( 'max_connections' ), 'A variable MySQL does define reads back a value.' );
+		$this->assertIsNumeric( WP_ServerInfo_MySQL::max_connections(), 'max_connections is reported as a number.' );
 	}
 
 	public function test_max_allowed_packet_is_numeric() {
-		$this->assertIsNumeric( WP_ServerInfo_MySQL::max_allowed_packet() );
+		$this->assertIsNumeric( WP_ServerInfo_MySQL::max_allowed_packet(), 'max_allowed_packet is reported as a number.' );
 	}
 
 	/**
@@ -43,34 +43,34 @@ class WP_ServerInfo_MySQL_Test extends WP_ServerInfo_TestCase {
 		$value = WP_ServerInfo_MySQL::query_cache_size();
 
 		if ( null !== $value ) {
-			$this->assertIsNumeric( $value );
+			$this->assertIsNumeric( $value, 'When the server reports a query cache size, it is a number.' );
 		} else {
-			$this->assertNull( $value );
+			$this->assertNull( $value, 'When the server has no query cache, the value is null rather than an empty string.' );
 		}
 	}
 
 	public function test_version_is_reported() {
-		$this->assertNotEmpty( WP_ServerInfo_MySQL::version() );
+		$this->assertNotEmpty( WP_ServerInfo_MySQL::version(), 'The MySQL version is reported.' );
 	}
 
 	public function test_variables_listing_is_not_empty() {
 		$variables = WP_ServerInfo_MySQL::variables();
 
-		$this->assertNotEmpty( $variables );
+		$this->assertNotEmpty( $variables, 'The variables listing is not empty, or the shape assertions below are vacuous.' );
 
 		// Rows come back as arrays rather than objects, so that MySQL's own
 		// CamelCase column names are keys the coding standard has no opinion
 		// about instead of property names it rejects.
-		$this->assertIsArray( $variables[0] );
-		$this->assertArrayHasKey( 'Variable_name', $variables[0] );
-		$this->assertArrayHasKey( 'Value', $variables[0] );
+		$this->assertIsArray( $variables[0], 'Each row of the listing is an array.' );
+		$this->assertArrayHasKey( 'Variable_name', $variables[0], 'Each row is keyed with Variable_name, which the screen reads.' );
+		$this->assertArrayHasKey( 'Value', $variables[0], 'Each row is keyed with Value, which the screen reads.' );
 	}
 
 	public function test_disk_usage_totals_are_non_negative_integers() {
-		$this->assertIsInt( WP_ServerInfo_MySQL::data_usage() );
-		$this->assertIsInt( WP_ServerInfo_MySQL::index_usage() );
-		$this->assertGreaterThanOrEqual( 0, WP_ServerInfo_MySQL::data_usage() );
-		$this->assertGreaterThanOrEqual( 0, WP_ServerInfo_MySQL::index_usage() );
+		$this->assertIsInt( WP_ServerInfo_MySQL::data_usage(), 'Data usage is an integer of bytes.' );
+		$this->assertIsInt( WP_ServerInfo_MySQL::index_usage(), 'Index usage is an integer of bytes.' );
+		$this->assertGreaterThanOrEqual( 0, WP_ServerInfo_MySQL::data_usage(), 'Data usage is never negative.' );
+		$this->assertGreaterThanOrEqual( 0, WP_ServerInfo_MySQL::index_usage(), 'Index usage is never negative.' );
 	}
 
 	/**

@@ -147,8 +147,8 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	public function test_multisite_loop_lifts_the_site_query_cap() {
 		$source = file_get_contents( $this->uninstall_file() );
 
-		$this->assertMatchesRegularExpression( "/'number'\s*=>\s*0/", $source );
-		$this->assertMatchesRegularExpression( "/'fields'\s*=>\s*'ids'/", $source );
+		$this->assertMatchesRegularExpression( "/'number'\s*=>\s*0/", $source, 'uninstall.php lifts the site query cap, or a network past the default is half-uninstalled.' );
+		$this->assertMatchesRegularExpression( "/'fields'\s*=>\s*'ids'/", $source, 'uninstall.php asks for ids only, which is what makes the unlimited query affordable.' );
 	}
 
 	/**
@@ -161,7 +161,8 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertMatchesRegularExpression(
 			'/switch_to_blog\(.*?wp_serverinfo_uninstall_site\(\);.*?restore_current_blog\(\);\s*\}/s',
-			$source
+			$source,
+			'The restore sits inside the loop; once after it leaves the stack unwound by one.'
 		);
 	}
 
@@ -180,8 +181,8 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
 		$body   = preg_replace( '#//[^\n]*#', '', $body );
 
-		$this->assertDoesNotMatchRegularExpression( '/\bWP_ServerInfo(_[A-Za-z]+)?::/', $body );
-		$this->assertDoesNotMatchRegularExpression( '/\bWP_SERVERINFO_[A-Z_]+/', $body );
+		$this->assertDoesNotMatchRegularExpression( '/\bWP_ServerInfo(_[A-Za-z]+)?::/', $body, 'uninstall.php names a plugin class, so it depends on the plugin having been loaded.' );
+		$this->assertDoesNotMatchRegularExpression( '/\bWP_SERVERINFO_[A-Z_]+/', $body, 'uninstall.php names a plugin constant, so it depends on the plugin having been loaded.' );
 	}
 
 	/**
@@ -195,11 +196,11 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	public function test_the_version_row_is_deleted() {
 		update_option( 'wp_serverinfo_version', array( 'plugin' => '3.0.0' ) );
 
-		$this->assertIsArray( get_option( 'wp_serverinfo_version' ) );
+		$this->assertIsArray( get_option( 'wp_serverinfo_version' ), 'The fixture really does have a version row for uninstall to delete.' );
 
 		$this->run_uninstall();
 
-		$this->assertFalse( get_option( 'wp_serverinfo_version' ) );
+		$this->assertFalse( get_option( 'wp_serverinfo_version' ), 'Uninstall deletes the version row.' );
 	}
 
 	/**
@@ -214,8 +215,8 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	public function test_the_user_walk_is_paged() {
 		$source = file_get_contents( $this->uninstall_file() );
 
-		$this->assertMatchesRegularExpression( "/'paged'\s*=>/", $source );
-		$this->assertMatchesRegularExpression( "/'number'\s*=>\s*\\\$per_page/", $source );
+		$this->assertMatchesRegularExpression( "/'paged'\s*=>/", $source, 'The user walk is paged rather than loading every user at once.' );
+		$this->assertMatchesRegularExpression( "/'number'\s*=>\s*\\\$per_page/", $source, 'The user walk asks for a page at a time.' );
 
 		$user_ids = self::factory()->user->create_many( 3 );
 
@@ -226,7 +227,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 		$this->run_uninstall();
 
 		foreach ( $user_ids as $user_id ) {
-			$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ) );
+			$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ), 'The per-user dashboard meta is removed for every user the walk reaches.' );
 		}
 	}
 

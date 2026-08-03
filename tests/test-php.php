@@ -74,7 +74,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 	public function test_gd_version_is_reported_or_na() {
 		$gd = WP_ServerInfo_PHP::gd_version();
 
-		$this->assertNotEmpty( $gd );
+		$this->assertNotEmpty( $gd, 'The GD version is reported, or N/A, but never an empty string.' );
 
 		if ( function_exists( 'gd_info' ) ) {
 			$info = gd_info();
@@ -141,8 +141,8 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$load = WP_ServerInfo_PHP::server_load();
 
 		if ( 'N/A' !== $load ) {
-			$this->assertIsNumeric( $load );
-			$this->assertGreaterThanOrEqual( 0, (float) $load );
+			$this->assertIsNumeric( $load, 'When the server reports a load average, it is a number.' );
+			$this->assertGreaterThanOrEqual( 0, (float) $load, 'A load average is never negative.' );
 		} else {
 			$this->assertSame( 'N/A', $load );
 		}
@@ -165,7 +165,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wp-serverinfo-php.php' );
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
 
-		$this->assertDoesNotMatchRegularExpression( '/(?<![a-z_])system\s*\(/', $body );
+		$this->assertDoesNotMatchRegularExpression( '/(?<![a-z_])system\s*\(/', $body, 'Server load shells out through system(), which a hardened host disables.' );
 	}
 
 	public function test_summary_reports_the_running_interpreter() {
@@ -173,7 +173,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertSame( phpversion(), $summary['PHP Version'] );
 		$this->assertSame( php_sapi_name(), $summary['Server API'] );
-		$this->assertNotEmpty( $summary['Loaded Extensions'] );
+		$this->assertNotEmpty( $summary['Loaded Extensions'], 'The summary reports the extensions of the interpreter actually running.' );
 	}
 
 	/**
@@ -264,15 +264,15 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 	public function test_the_directive_list_comes_from_ini_get_all() {
 		$ini = WP_ServerInfo_PHP::ini_directives();
 
-		$this->assertArrayHasKey( 'memory_limit', $ini );
-		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $ini );
+		$this->assertArrayHasKey( 'memory_limit', $ini, 'The directive list comes from ini_get_all, so memory_limit is in it.' );
+		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $ini, 'The directive list is ini_get_all only; a request header has no business in it.' );
 		$this->assertSame( ini_get( 'memory_limit' ), $ini['memory_limit']['local_value'] );
 	}
 
 	public function test_ini_directives_are_sorted_and_shaped() {
 		$ini = WP_ServerInfo_PHP::ini_directives();
 
-		$this->assertNotEmpty( $ini );
+		$this->assertNotEmpty( $ini, 'The directive list is not empty, or the shape assertions below are vacuous.' );
 
 		$keys   = array_keys( $ini );
 		$sorted = $keys;
@@ -281,8 +281,8 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$this->assertSame( $sorted, $keys );
 
 		$first = reset( $ini );
-		$this->assertIsArray( $first );
-		$this->assertArrayHasKey( 'local_value', $first );
-		$this->assertArrayHasKey( 'global_value', $first );
+		$this->assertIsArray( $first, 'Each directive is an array of its values.' );
+		$this->assertArrayHasKey( 'local_value', $first, 'Each directive carries its local_value, which the screen reads.' );
+		$this->assertArrayHasKey( 'global_value', $first, 'Each directive carries its global_value, which the screen reads.' );
 	}
 }

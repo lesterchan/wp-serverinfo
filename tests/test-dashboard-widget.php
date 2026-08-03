@@ -51,7 +51,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	public function test_widget_is_registered_for_an_administrator() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		$this->assertNotNull( $this->register() );
+		$this->assertNotNull( $this->register(), 'An administrator gets the dashboard widget.' );
 	}
 
 	/**
@@ -65,7 +65,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	public function test_widget_is_hidden_from_users_without_manage_options( $role ) {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => $role ) ) );
 
-		$this->assertNull( $this->register() );
+		$this->assertNull( $this->register(), 'A user without manage_options gets no dashboard widget.' );
 	}
 
 	public function data_roles_without_manage_options() {
@@ -80,7 +80,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	public function test_widget_is_hidden_from_logged_out_visitors() {
 		wp_set_current_user( 0 );
 
-		$this->assertNull( $this->register() );
+		$this->assertNull( $this->register(), 'A logged out visitor gets no dashboard widget.' );
 	}
 
 	public function test_widget_renders_each_section() {
@@ -146,7 +146,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertStringNotContainsString( 'translators:', $html );
 		$this->assertStringNotContainsString( '<?php', $html );
-		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html );
-		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html );
+		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html, 'An entity has been double-escaped somewhere in the widget.' );
+		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html, 'A PHP undefined-key diagnostic leaked into the widget.' );
 	}
 }
