@@ -87,6 +87,6 @@ class WP_ServerInfo_MySQL_Test extends WP_ServerInfo_TestCase {
 		WP_ServerInfo_MySQL::index_usage();
 		WP_ServerInfo_MySQL::table_status();
 
-		$this->assertSame( $before, $wpdb->num_queries );
+		$this->assertSame( $before, $wpdb->num_queries, 'The table status is queried once and reused, not once per row rendered.' );
 	}
 }

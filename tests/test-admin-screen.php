@@ -134,8 +134,8 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 		$entry = $this->menu_entry();
 
 		$this->assertNotNull( $entry, 'The WP-ServerInfo page was not registered.' );
-		$this->assertSame( 'manage_options', $entry[1] );
-		$this->assertSame( 'manage_options', WP_ServerInfo_Admin::CAPABILITY );
+		$this->assertSame( 'manage_options', $entry[1], 'The menu entry requires manage_options.' );
+		$this->assertSame( 'manage_options', WP_ServerInfo_Admin::CAPABILITY, 'And the constant says the same, so the two cannot drift.' );
 	}
 
 	/**
@@ -156,9 +156,9 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 			2
 		);
 
-		$this->assertSame( 'edit_posts', WP_ServerInfo_Admin::capability( 'report' ) );
-		$this->assertSame( 'edit_posts', WP_ServerInfo_Admin::capability( 'widget' ) );
-		$this->assertSame( array( 'report', 'widget' ), $seen );
+		$this->assertSame( 'edit_posts', WP_ServerInfo_Admin::capability( 'report' ), 'The filter can set the report capability.' );
+		$this->assertSame( 'edit_posts', WP_ServerInfo_Admin::capability( 'widget' ), 'And the widget capability.' );
+		$this->assertSame( array( 'report', 'widget' ), $seen, 'It is told which context is asking, each time it is asked.' );
 	}
 
 	/**
@@ -166,10 +166,11 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	 * cannot drift apart the way they would if each spelled out tools.php.
 	 */
 	public function test_the_page_url_is_under_tools() {
-		$this->assertSame( admin_url( 'tools.php?page=wp-serverinfo' ), WP_ServerInfo_Admin::url() );
+		$this->assertSame( admin_url( 'tools.php?page=wp-serverinfo' ), WP_ServerInfo_Admin::url(), 'The report lives under Tools, per the menu rule.' );
 		$this->assertSame(
 			admin_url( 'tools.php?page=wp-serverinfo&tab=mysql' ),
-			WP_ServerInfo_Admin::url( 'mysql' )
+			WP_ServerInfo_Admin::url( 'mysql' ),
+			'And a tab is addressed by argument rather than by a screen of its own.'
 		);
 		$this->assertStringNotContainsString(
 			'index.php',
@@ -187,8 +188,8 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	public function test_every_tab_renders_a_panel( $tab, $panel_id ) {
 		$html = $this->render( $tab );
 
-		$this->assertStringContainsString( 'id="' . $panel_id . '"', $html );
-		$this->assertStringContainsString( 'nav-tab-active', $html );
+		$this->assertStringContainsString( 'id="' . $panel_id . '"', $html, 'The ' . $panel_id . ' panel is missing from its tab.' );
+		$this->assertStringContainsString( 'nav-tab-active', $html, 'And the tab being viewed is marked active.' );
 	}
 
 	public function data_tabs() {
@@ -202,7 +203,7 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	public function test_unknown_tab_falls_back_to_general() {
 		$html = $this->render( 'no-such-tab' );
 
-		$this->assertStringContainsString( 'GeneralOverview', $html );
+		$this->assertStringContainsString( 'GeneralOverview', $html, 'An unknown tab falls back to General rather than rendering an empty screen.' );
 	}
 
 	/**
@@ -211,8 +212,8 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	public function test_tab_parameter_cannot_inject_markup() {
 		$html = $this->render( '"><script>alert(1)</script>' );
 
-		$this->assertStringNotContainsString( '<script>alert(1)</script>', $html );
-		$this->assertStringContainsString( 'GeneralOverview', $html );
+		$this->assertStringNotContainsString( '<script>alert(1)</script>', $html, 'A hostile tab argument never renders as markup.' );
+		$this->assertStringContainsString( 'GeneralOverview', $html, 'And the screen still falls back to General rather than breaking.' );
 	}
 
 	public function test_general_tab_links_to_every_other_tab() {
@@ -230,10 +231,10 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	public function test_php_tab_does_not_leak_the_environment() {
 		$html = $this->render( 'php' );
 
-		$this->assertStringContainsString( 'Loaded Extensions', $html );
-		$this->assertStringNotContainsString( 'HTTP_COOKIE', $html );
-		$this->assertStringNotContainsString( 'DB_PASSWORD', $html );
-		$this->assertStringNotContainsString( DB_PASSWORD, $html );
+		$this->assertStringContainsString( 'Loaded Extensions', $html, 'The PHP tab reports the interpreter configuration.' );
+		$this->assertStringNotContainsString( 'HTTP_COOKIE', $html, 'Without leaking request headers.' );
+		$this->assertStringNotContainsString( 'DB_PASSWORD', $html, 'Or naming the database password constant.' );
+		$this->assertStringNotContainsString( DB_PASSWORD, $html, 'Or, worse, printing its value.' );
 	}
 
 	/**
@@ -247,8 +248,8 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	public function test_rendered_markup_is_undamaged( $tab ) {
 		$html = $this->render( $tab );
 
-		$this->assertStringNotContainsString( 'translators:', $html );
-		$this->assertStringNotContainsString( '<?php', $html );
+		$this->assertStringNotContainsString( 'translators:', $html, 'No translator comment leaked into the markup.' );
+		$this->assertStringNotContainsString( '<?php', $html, 'No PHP tag reached the page, which would mean a template was echoed unparsed.' );
 		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html, 'An entity has been double-escaped somewhere in the screen.' );
 		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html, 'A PHP undefined-key diagnostic leaked into the screen.' );
 	}
@@ -265,14 +266,14 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	public function test_screen_uses_core_classes_and_no_inline_styling( $tab ) {
 		$html = $this->render( $tab );
 
-		$this->assertStringNotContainsString( '<style', $html );
-		$this->assertStringNotContainsString( 'style=', $html );
-		$this->assertStringNotContainsString( '!important', $html );
+		$this->assertStringNotContainsString( '<style', $html, 'The screen carries no style block.' );
+		$this->assertStringNotContainsString( 'style=', $html, 'And no inline style attribute.' );
+		$this->assertStringNotContainsString( '!important', $html, 'And forces nothing, so a theme or a plugin can restyle it.' );
 		$this->assertDoesNotMatchRegularExpression( '/\s(width|valign|align)=/', $html, 'The screen uses a presentational attribute where a core class belongs.' );
 
-		$this->assertStringContainsString( 'class="wrap"', $html );
-		$this->assertStringContainsString( 'nav-tab-wrapper', $html );
-		$this->assertStringContainsString( 'class="widefat striped"', $html );
+		$this->assertStringContainsString( 'class="wrap"', $html, 'It uses the core page wrapper.' );
+		$this->assertStringContainsString( 'nav-tab-wrapper', $html, 'The core tab nav.' );
+		$this->assertStringContainsString( 'class="widefat striped"', $html, 'And the core table classes, so it looks like the rest of wp-admin.' );
 		$this->assertSame( 1, preg_match_all( '/<h1[ >]/', $html ), 'One h1 per screen.' );
 	}
 
@@ -281,11 +282,13 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertSame(
 			WP_ServerInfo_Cache::has_memcached(),
-			false !== strpos( $html, 'tab=memcached' )
+			false !== strpos( $html, 'tab=memcached' ),
+			'The memcached tab is offered exactly when the extension is loaded.'
 		);
 		$this->assertSame(
 			WP_ServerInfo_Cache::has_redis(),
-			false !== strpos( $html, 'tab=redis' )
+			false !== strpos( $html, 'tab=redis' ),
+			'And the redis tab likewise, so neither is a dead link.'
 		);
 	}
 }

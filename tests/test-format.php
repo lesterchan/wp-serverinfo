@@ -16,11 +16,11 @@
 class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 
 	public function test_bytes_below_a_kibibyte_render_as_bytes() {
-		$this->assertSame( '512 bytes', WP_ServerInfo_Format::filesize( 512 ) );
+		$this->assertSame( '512 bytes', WP_ServerInfo_Format::filesize( 512 ), 'Below a kibibyte the size is given in bytes.' );
 	}
 
 	public function test_zero_renders_as_bytes_rather_than_unknown() {
-		$this->assertSame( '0 bytes', WP_ServerInfo_Format::filesize( 0 ) );
+		$this->assertSame( '0 bytes', WP_ServerInfo_Format::filesize( 0 ), 'Zero is a size, not an unavailable value.' );
 	}
 
 	/**
@@ -34,7 +34,7 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * @param string $expected Expected rendering.
 	 */
 	public function test_exact_unit_boundary_uses_that_unit( $bytes, $expected ) {
-		$this->assertSame( $expected, WP_ServerInfo_Format::filesize( $bytes ) );
+		$this->assertSame( $expected, WP_ServerInfo_Format::filesize( $bytes ), 'An exact boundary uses the larger unit rather than the smaller one.' );
 	}
 
 	public function data_unit_boundaries() {
@@ -47,9 +47,9 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	}
 
 	public function test_negative_and_non_numeric_sizes_are_unknown() {
-		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( -1 ) );
-		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( 'not a size' ) );
-		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( null ) );
+		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( -1 ), 'A negative size is unknown; there is no such file.' );
+		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( 'not a size' ), 'A string that is not a number is unknown.' );
+		$this->assertSame( 'unknown', WP_ServerInfo_Format::filesize( null ), 'And null is unknown rather than zero.' );
 	}
 
 	/**
@@ -63,7 +63,7 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * @param string $expected Expected rendering.
 	 */
 	public function test_shorthand_sizes_parse_in_either_case( $value, $expected ) {
-		$this->assertSame( $expected, WP_ServerInfo_Format::php_size( $value ) );
+		$this->assertSame( $expected, WP_ServerInfo_Format::php_size( $value ), 'The ' . $value . ' shorthand does not parse to the size it names.' );
 	}
 
 	public function data_shorthand_sizes() {
@@ -83,16 +83,16 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * fall through the formatter and render as "unknown".
 	 */
 	public function test_unlimited_memory_limit_is_labelled_not_unknown() {
-		$this->assertSame( 'Unlimited', WP_ServerInfo_Format::php_size( '-1' ) );
-		$this->assertSame( 'Unlimited', WP_ServerInfo_Format::php_size( -1 ) );
+		$this->assertSame( 'Unlimited', WP_ServerInfo_Format::php_size( '-1' ), 'A -1 limit is Unlimited, which is what PHP means by it.' );
+		$this->assertSame( 'Unlimited', WP_ServerInfo_Format::php_size( -1 ), 'Whether it arrives as a string or an integer.' );
 	}
 
 	public function test_unparseable_php_size_is_returned_verbatim() {
-		$this->assertSame( 'nonsense', WP_ServerInfo_Format::php_size( 'nonsense' ) );
+		$this->assertSame( 'nonsense', WP_ServerInfo_Format::php_size( 'nonsense' ), 'A value that will not parse is shown as it was configured rather than as unknown.' );
 	}
 
 	public function test_surrounding_whitespace_is_ignored() {
-		$this->assertSame( '128.0 MiB', WP_ServerInfo_Format::php_size( ' 128M ' ) );
+		$this->assertSame( '128.0 MiB', WP_ServerInfo_Format::php_size( ' 128M ' ), 'Surrounding whitespace is ignored rather than defeating the parse.' );
 	}
 
 	/**
@@ -100,14 +100,14 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * straight to number_format_i18n() deprecates on PHP 8.1+.
 	 */
 	public function test_number_falls_back_to_na_for_unavailable_values() {
-		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( null ) );
-		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( '' ) );
-		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( 'unknown' ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( null ), 'Null is unavailable.' );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( '' ), 'An empty string is unavailable.' );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( 'unknown' ), 'And the literal unknown is passed through as unavailable.' );
 	}
 
 	public function test_number_localizes_numeric_values() {
-		$this->assertSame( '1,024', WP_ServerInfo_Format::number( 1024 ) );
-		$this->assertSame( '151', WP_ServerInfo_Format::number( '151' ) );
+		$this->assertSame( '1,024', WP_ServerInfo_Format::number( 1024 ), 'A number is localised with its thousands separator.' );
+		$this->assertSame( '151', WP_ServerInfo_Format::number( '151' ), 'A numeric string is localised too.' );
 	}
 
 	/**
@@ -115,10 +115,10 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * the truthiness checks the probes were written with.
 	 */
 	public function test_number_distinguishes_zero_from_unavailable() {
-		$this->assertSame( '0', WP_ServerInfo_Format::number( 0 ) );
-		$this->assertSame( '0', WP_ServerInfo_Format::number( '0' ) );
-		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( false ) );
-		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( array() ) );
+		$this->assertSame( '0', WP_ServerInfo_Format::number( 0 ), 'Zero is a count, not an unavailable value.' );
+		$this->assertSame( '0', WP_ServerInfo_Format::number( '0' ), 'Whether it arrives as a string or an integer.' );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( false ), 'False is unavailable, which is what a failed probe returns.' );
+		$this->assertSame( 'N/A', WP_ServerInfo_Format::number( array() ), 'And an array is unavailable rather than printed as Array.' );
 	}
 
 	/**
@@ -126,16 +126,16 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * no decimals. Sizes go through filesize(), which keeps one.
 	 */
 	public function test_number_shows_counts_without_decimals() {
-		$this->assertSame( '2', WP_ServerInfo_Format::number( 1.5 ) );
-		$this->assertSame( '1,024', WP_ServerInfo_Format::number( 1023.7 ) );
+		$this->assertSame( '2', WP_ServerInfo_Format::number( 1.5 ), 'A count is rounded rather than shown with decimals.' );
+		$this->assertSame( '1,024', WP_ServerInfo_Format::number( 1023.7 ), 'And rounds up at the boundary, as a reader would expect.' );
 	}
 
 	/**
 	 * MySQL variables arrive as strings, so the size formatter has to take one.
 	 */
 	public function test_filesize_accepts_a_numeric_string() {
-		$this->assertSame( '2.0 KiB', WP_ServerInfo_Format::filesize( '2048' ) );
-		$this->assertSame( '1.0 MiB', WP_ServerInfo_Format::filesize( 1048576.0 ) );
+		$this->assertSame( '2.0 KiB', WP_ServerInfo_Format::filesize( '2048' ), 'A numeric string is accepted as a size.' );
+		$this->assertSame( '1.0 MiB', WP_ServerInfo_Format::filesize( 1048576.0 ), 'And a float.' );
 	}
 
 	/**
@@ -143,8 +143,8 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * of the >= fix.
 	 */
 	public function test_a_byte_below_a_boundary_stays_in_the_smaller_unit() {
-		$this->assertSame( '1,023 bytes', WP_ServerInfo_Format::filesize( 1023 ) );
-		$this->assertSame( '1,024.0 KiB', WP_ServerInfo_Format::filesize( 1048575 ) );
+		$this->assertSame( '1,023 bytes', WP_ServerInfo_Format::filesize( 1023 ), 'One below a boundary stays in the smaller unit.' );
+		$this->assertSame( '1,024.0 KiB', WP_ServerInfo_Format::filesize( 1048575 ), 'Rather than rounding up into the larger one.' );
 	}
 
 	/**
@@ -153,11 +153,11 @@ class WP_ServerInfo_Format_Test extends WP_ServerInfo_TestCase {
 	 * read as a configured limit of nothing.
 	 */
 	public function test_an_empty_php_size_is_returned_verbatim() {
-		$this->assertSame( '', WP_ServerInfo_Format::php_size( '' ) );
-		$this->assertSame( '', WP_ServerInfo_Format::php_size( null ) );
+		$this->assertSame( '', WP_ServerInfo_Format::php_size( '' ), 'An empty directive is returned as it was rather than as unknown.' );
+		$this->assertSame( '', WP_ServerInfo_Format::php_size( null ), 'And an unset one.' );
 	}
 
 	public function test_php_size_accepts_a_bare_zero() {
-		$this->assertSame( '0 bytes', WP_ServerInfo_Format::php_size( 0 ) );
+		$this->assertSame( '0 bytes', WP_ServerInfo_Format::php_size( 0 ), 'A bare zero is a size of zero bytes.' );
 	}
 }

@@ -39,7 +39,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'host' => 'localhost',
 				'port' => 11211,
 			),
-			$this->resolve( 'memcached_server' )
+			$this->resolve( 'memcached_server' ),
+			'Memcached defaults to the local server on its own port.'
 		);
 	}
 
@@ -50,7 +51,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'port'    => 6379,
 				'timeout' => 1.0,
 			),
-			$this->resolve( 'redis_server' )
+			$this->resolve( 'redis_server' ),
+			'Redis defaults to the local server on its own port, with a timeout.'
 		);
 	}
 
@@ -70,7 +72,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'host' => 'cache.internal',
 				'port' => 11212,
 			),
-			$this->resolve( 'memcached_server' )
+			$this->resolve( 'memcached_server' ),
+			'A filter can point memcached at another server.'
 		);
 	}
 
@@ -92,7 +95,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'port'    => 6380,
 				'timeout' => 2.5,
 			),
-			$this->resolve( 'redis_server' )
+			$this->resolve( 'redis_server' ),
+			'And redis.'
 		);
 	}
 
@@ -115,16 +119,18 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'port'    => 6379,
 				'timeout' => 1.0,
 			),
-			$this->resolve( 'redis_server' )
+			$this->resolve( 'redis_server' ),
+			'A filter that returns only some keys keeps the defaults for the rest.'
 		);
 	}
 
 	public function test_extension_detection_matches_the_loaded_classes() {
 		$this->assertSame(
 			class_exists( 'Memcached' ) || class_exists( 'Memcache' ),
-			WP_ServerInfo_Cache::has_memcached()
+			WP_ServerInfo_Cache::has_memcached(),
+			'Detection follows the loaded class rather than a configuration value.'
 		);
-		$this->assertSame( class_exists( 'Redis' ), WP_ServerInfo_Cache::has_redis() );
+		$this->assertSame( class_exists( 'Redis' ), WP_ServerInfo_Cache::has_redis(), 'And the same for redis.' );
 	}
 
 	public function test_stats_return_false_when_the_extension_is_missing() {
@@ -167,7 +173,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'host' => 'localhost',
 				'port' => 11211,
 			),
-			$this->resolve( 'memcached_server' )
+			$this->resolve( 'memcached_server' ),
+			'A filter returning a non-array falls back to the memcached defaults.'
 		);
 
 		$this->assertSame(
@@ -176,7 +183,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 				'port'    => 6379,
 				'timeout' => 1.0,
 			),
-			$this->resolve( 'redis_server' )
+			$this->resolve( 'redis_server' ),
+			'And to the redis defaults.'
 		);
 	}
 
@@ -207,9 +215,9 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 
 		$server = $this->resolve( 'redis_server' );
 
-		$this->assertSame( '12345', $server['host'] );
-		$this->assertSame( 6380, $server['port'] );
-		$this->assertSame( 2.0, $server['timeout'] );
+		$this->assertSame( '12345', $server['host'], 'A filtered host is cast to a string, even when a number was returned.' );
+		$this->assertSame( 6380, $server['port'], 'A port to an integer.' );
+		$this->assertSame( 2.0, $server['timeout'], 'And a timeout to a float, so the client is never handed the wrong type.' );
 	}
 
 	/**
@@ -229,8 +237,8 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 
 		$server = $this->resolve( 'redis_server' );
 
-		$this->assertSame( 'unix:///var/run/redis.sock', $server['host'] );
-		$this->assertSame( 0, $server['port'] );
+		$this->assertSame( 'unix:///var/run/redis.sock', $server['host'], 'A socket path is kept as the host.' );
+		$this->assertSame( 0, $server['port'], 'And its zero port is kept rather than replaced by the default, which is what a socket needs.' );
 	}
 
 	/**
@@ -240,7 +248,7 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 	public function test_the_cache_probes_read_no_option_row() {
 		$source = wp_serverinfo_test_read( 'includes/class-wp-serverinfo-cache.php' );
 
-		$this->assertStringNotContainsString( 'get_option', $source );
+		$this->assertStringNotContainsString( 'get_option', $source, 'The probes read no option row; there is nothing stored to read.' );
 	}
 
 	/**
@@ -297,7 +305,7 @@ class WP_ServerInfo_Cache_Test extends WP_ServerInfo_TestCase {
 	 * @param int|float $expected Expected hit ratio.
 	 */
 	public function test_redis_hit_ratio( $info, $expected ) {
-		$this->assertSame( $expected, WP_ServerInfo_Cache::redis_hit_ratio( $info ) );
+		$this->assertSame( $expected, WP_ServerInfo_Cache::redis_hit_ratio( $info ), 'The hit ratio is computed from the reported hits and misses.' );
 	}
 
 	public function data_hit_ratios() {

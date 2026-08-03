@@ -88,11 +88,11 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString( 'General', $html );
-		$this->assertStringContainsString( 'PHP', $html );
-		$this->assertStringContainsString( 'MYSQL', $html );
-		$this->assertStringContainsString( 'Memory Limit', $html );
-		$this->assertStringContainsString( 'Max Script Execute Time', $html );
+		$this->assertStringContainsString( 'General', $html, 'The widget renders the general section.' );
+		$this->assertStringContainsString( 'PHP', $html, 'The PHP section.' );
+		$this->assertStringContainsString( 'MYSQL', $html, 'And the MySQL section.' );
+		$this->assertStringContainsString( 'Memory Limit', $html, 'With the memory limit row.' );
+		$this->assertStringContainsString( 'Max Script Execute Time', $html, 'And the execution time row.' );
 	}
 
 	/**
@@ -104,9 +104,9 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString( esc_url( WP_ServerInfo_Admin::url() ), $html );
-		$this->assertStringContainsString( 'tools.php', $html );
-		$this->assertStringNotContainsString( 'index.php?page=wp-serverinfo', $html );
+		$this->assertStringContainsString( esc_url( WP_ServerInfo_Admin::url() ), $html, 'The widget links to the report at the URL the admin class builds.' );
+		$this->assertStringContainsString( 'tools.php', $html, 'Which is under Tools.' );
+		$this->assertStringNotContainsString( 'index.php?page=wp-serverinfo', $html, 'Rather than the Dashboard, where the screen used to live.' );
 	}
 
 	/**
@@ -119,10 +119,10 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 		$html = $this->render();
 
-		$this->assertStringNotContainsString( '<style', $html );
-		$this->assertStringNotContainsString( 'style=', $html );
-		$this->assertStringNotContainsString( '!important', $html );
-		$this->assertStringContainsString( 'dir="ltr"', $html );
+		$this->assertStringNotContainsString( '<style', $html, 'The widget carries no style block.' );
+		$this->assertStringNotContainsString( 'style=', $html, 'And no inline style attribute.' );
+		$this->assertStringNotContainsString( '!important', $html, 'And forces nothing.' );
+		$this->assertStringContainsString( 'dir="ltr"', $html, 'The version numbers are marked left-to-right, so an RTL locale does not reverse them.' );
 	}
 
 	/**
@@ -135,8 +135,8 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString( '<li>v<strong>' . PHP_VERSION . '</strong></li>', $html );
-		$this->assertStringNotContainsString( '<strong>v' . PHP_VERSION, $html );
+		$this->assertStringContainsString( '<li>v<strong>' . PHP_VERSION . '</strong></li>', $html, 'The v prefix sits outside the bold, so the number alone is emphasised.' );
+		$this->assertStringNotContainsString( '<strong>v' . PHP_VERSION, $html, 'Rather than inside it, which reads as part of the version.' );
 	}
 
 	public function test_widget_markup_is_undamaged() {
@@ -144,8 +144,8 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 
 		$html = $this->render();
 
-		$this->assertStringNotContainsString( 'translators:', $html );
-		$this->assertStringNotContainsString( '<?php', $html );
+		$this->assertStringNotContainsString( 'translators:', $html, 'No translator comment leaked into the markup.' );
+		$this->assertStringNotContainsString( '<?php', $html, 'No PHP tag reached the page either.' );
 		$this->assertDoesNotMatchRegularExpression( '/&amp;(nbsp|quot|amp|lt|gt);/', $html, 'An entity has been double-escaped somewhere in the widget.' );
 		$this->assertDoesNotMatchRegularExpression( '/Undefined [a-z ]*(key|index|variable|property)/', $html, 'A PHP undefined-key diagnostic leaked into the widget.' );
 	}

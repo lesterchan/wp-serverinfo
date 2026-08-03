@@ -129,9 +129,9 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 	public function test_the_licence_block_is_the_or_later_variant() {
 		$source = $this->plugin_file();
 
-		$this->assertSame( 'GPLv2 or later', $this->header_field( 'License' ) );
-		$this->assertStringContainsString( 'either version 2 of the License, or', $source );
-		$this->assertStringContainsString( '(at your option) any later version.', $source );
+		$this->assertSame( 'GPLv2 or later', $this->header_field( 'License' ), 'The header offers the later-version option.' );
+		$this->assertStringContainsString( 'either version 2 of the License, or', $source, 'The licence comment offers it too.' );
+		$this->assertStringContainsString( '(at your option) any later version.', $source, 'In full, so the two cannot disagree.' );
 		$this->assertStringContainsString(
 			'Copyright 2026  Lester Chan  (email : lesterchan@gmail.com)',
 			$source,
@@ -153,17 +153,18 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 		preg_match_all( '/^### (.+?)\s*$/m', $description, $headings );
 
 		$this->assertNotEmpty( $headings[1], '## Description must carry at least the Donations h3.' );
-		$this->assertSame( 'Donations', end( $headings[1] ) );
+		$this->assertSame( 'Donations', end( $headings[1] ), 'Donations is the last heading, so it closes the description.' );
 
 		$this->assertStringContainsString(
 			'I spent most of my free time creating, updating, maintaining and supporting these plugins,'
 			. ' if you really love my plugins and could spare me a couple of bucks, I will really appreciate it.'
 			. ' If not feel free to use it without any obligations.',
-			$description
+			$description,
+			'And carries the collection wording, word for word.'
 		);
 
 		// A plain paragraph, never a bullet: five plugins carried a stray "* ".
-		$this->assertStringNotContainsString( '* I spent most of my free time', $description );
+		$this->assertStringNotContainsString( '* I spent most of my free time', $description, 'Without a stray bullet, which an earlier copy carried.' );
 	}
 
 	/**
@@ -206,7 +207,8 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 				'wp_serverinfo_memcached_server',
 				'wp_serverinfo_redis_server',
 			),
-			$fired
+			$fired,
+			'Every hook this plugin fires is prefixed and documented, and there are exactly these three.'
 		);
 
 		foreach ( $fired as $hook ) {
@@ -284,8 +286,8 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 		$readme = (string) preg_replace( '/`[^`]*`/', '', $this->readme() );
 
 		$this->assertSame( 0, preg_match( '#http://#', $readme ), 'Every readme link must use https.' );
-		$this->assertSame( 0, preg_match( '#http://#', $this->plugin_file() ) );
-		$this->assertStringNotContainsString( 'forums.lesterchan.net', $readme );
+		$this->assertSame( 0, preg_match( '#http://#', $this->plugin_file() ), 'The plugin file links over https only.' );
+		$this->assertStringNotContainsString( 'forums.lesterchan.net', $readme, 'The retired support forum is not linked; it no longer exists.' );
 	}
 
 	/**
@@ -299,8 +301,8 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 	public function test_no_inline_styling_survives_in_the_source() {
 		$code = wp_serverinfo_test_source_code();
 
-		$this->assertStringNotContainsString( '!important', $code );
-		$this->assertStringNotContainsString( '<style', $code );
+		$this->assertStringNotContainsString( '!important', $code, 'No rule is forced anywhere in the source.' );
+		$this->assertStringNotContainsString( '<style', $code, 'And no style block is printed.' );
 		$this->assertDoesNotMatchRegularExpression( '/\s(style|valign|align)=/', $code, 'The source still carries inline styling where a stylesheet belongs.' );
 		$this->assertDoesNotMatchRegularExpression( '/<(td|th|table|div)[^>]*\swidth=/', $code, 'The source still sets a width attribute where CSS belongs.' );
 	}
@@ -315,10 +317,11 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 	 * all the shared uninstall test, which only walks the options table.
 	 */
 	public function test_the_uninstaller_agrees_with_the_widget_id_constant() {
-		$this->assertSame( 'dashboard_serverinfo', WP_SERVERINFO_WIDGET_ID );
+		$this->assertSame( 'dashboard_serverinfo', WP_SERVERINFO_WIDGET_ID, 'The widget id constant is the id core registers.' );
 		$this->assertStringContainsString(
 			"\$widget_id = '" . WP_SERVERINFO_WIDGET_ID . "';",
-			wp_serverinfo_test_read( 'uninstall.php' )
+			wp_serverinfo_test_read( 'uninstall.php' ),
+			'And uninstall.php uses that exact value, so a rename cannot orphan the cleanup.'
 		);
 	}
 
@@ -354,7 +357,7 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 	public function test_no_settings_api_scaffolding_exists() {
 		$code = wp_serverinfo_test_source_code();
 
-		$this->assertStringNotContainsString( 'add_settings_field', $code );
-		$this->assertStringNotContainsString( 'sanitize_callback', $code );
+		$this->assertStringNotContainsString( 'add_settings_field', $code, 'No Settings API field is registered; this plugin stores nothing.' );
+		$this->assertStringNotContainsString( 'sanitize_callback', $code, 'And no sanitiser, for the same reason.' );
 	}
 }

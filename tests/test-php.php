@@ -51,24 +51,24 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 			$this->markTestSkipped( 'max_execution_time is not settable in this SAPI.' );
 		}
 
-		$this->assertSame( '0', WP_ServerInfo_PHP::max_execution() );
-		$this->assertStringNotContainsString( 'N/A', WP_ServerInfo_PHP::max_execution() );
+		$this->assertSame( '0', WP_ServerInfo_PHP::max_execution(), 'A zero directive reports as zero.' );
+		$this->assertStringNotContainsString( 'N/A', WP_ServerInfo_PHP::max_execution(), 'Not as unavailable, which is what an empty check would make of it.' );
 
 		set_time_limit( $original );
 	}
 
 	public function test_unset_directive_reports_na() {
-		$this->assertSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'wp_serverinfo_no_such_directive' ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'wp_serverinfo_no_such_directive' ), 'A directive PHP does not have reports as unavailable.' );
 	}
 
 	public function test_known_directives_are_reported() {
-		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::memory_limit() );
-		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::upload_max() );
-		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::post_max() );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::memory_limit(), 'The memory limit is reported.' );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::upload_max(), 'The upload maximum is reported.' );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::post_max(), 'And the post maximum.' );
 	}
 
 	public function test_short_tag_is_a_localized_on_or_off() {
-		$this->assertContains( WP_ServerInfo_PHP::short_tag(), array( 'On', 'Off' ) );
+		$this->assertContains( WP_ServerInfo_PHP::short_tag(), array( 'On', 'Off' ), 'The short tag setting reads as a localised On or Off, never as a raw boolean.' );
 	}
 
 	public function test_gd_version_is_reported_or_na() {
@@ -78,9 +78,9 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 		if ( function_exists( 'gd_info' ) ) {
 			$info = gd_info();
-			$this->assertSame( $info['GD Version'], $gd );
+			$this->assertSame( $info['GD Version'], $gd, 'With GD loaded the version it reports is what is shown.' );
 		} else {
-			$this->assertSame( 'N/A', $gd );
+			$this->assertSame( 'N/A', $gd, 'Without it, unavailable rather than an empty string.' );
 		}
 	}
 
@@ -94,7 +94,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wp-serverinfo-php.php' );
 		$body   = preg_replace( '#/\*.*?\*/#s', '', $source );
 
-		$this->assertStringNotContainsString( 'phpinfo(', $body );
+		$this->assertStringNotContainsString( 'phpinfo(', $body, 'The GD version is asked for directly rather than scraped out of phpinfo().' );
 	}
 
 	public function test_server_value_is_sanitized_and_unslashed() {
@@ -102,14 +102,14 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 		$value = WP_ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' );
 
-		$this->assertStringNotContainsString( '<b>', $value );
-		$this->assertStringNotContainsString( '\\/', $value );
+		$this->assertStringNotContainsString( '<b>', $value, 'A server value is sanitised, so markup in a header cannot reach the page.' );
+		$this->assertStringNotContainsString( '\\/', $value, 'And unslashed, so an escaped slash does not survive into the output.' );
 	}
 
 	public function test_missing_server_key_is_an_empty_string() {
 		unset( $_SERVER['SERVER_SOFTWARE'] );
 
-		$this->assertSame( '', WP_ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ) );
+		$this->assertSame( '', WP_ServerInfo_PHP::server_value( 'SERVER_SOFTWARE' ), 'A key the host does not set reads as an empty string rather than a notice.' );
 	}
 
 	public function test_server_address_reads_server_addr_by_default() {
@@ -118,7 +118,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$_SERVER['SERVER_ADDR'] = '10.0.0.5';
 		$_SERVER['LOCAL_ADDR']  = '192.168.1.1';
 
-		$this->assertSame( '10.0.0.5', WP_ServerInfo_PHP::server_address() );
+		$this->assertSame( '10.0.0.5', WP_ServerInfo_PHP::server_address(), 'The server address comes from SERVER_ADDR by default.' );
 	}
 
 	/**
@@ -132,7 +132,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$_SERVER['SERVER_ADDR'] = '';
 		$_SERVER['LOCAL_ADDR']  = '192.168.1.1';
 
-		$this->assertSame( '192.168.1.1', WP_ServerInfo_PHP::server_address() );
+		$this->assertSame( '192.168.1.1', WP_ServerInfo_PHP::server_address(), 'And from LOCAL_ADDR on IIS, which does not set the former.' );
 
 		$GLOBALS['is_IIS'] = false;
 	}
@@ -144,7 +144,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 			$this->assertIsNumeric( $load, 'When the server reports a load average, it is a number.' );
 			$this->assertGreaterThanOrEqual( 0, (float) $load, 'A load average is never negative.' );
 		} else {
-			$this->assertSame( 'N/A', $load );
+			$this->assertSame( 'N/A', $load, 'Where the load average cannot be read, it is unavailable rather than zero.' );
 		}
 	}
 
@@ -158,7 +158,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		WP_ServerInfo_PHP::server_load();
 		$printed = ob_get_clean();
 
-		$this->assertSame( '', $printed );
+		$this->assertSame( '', $printed, 'Reading the load prints nothing, whatever it had to call to get it.' );
 	}
 
 	public function test_server_load_does_not_shell_out_via_system() {
@@ -171,8 +171,8 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 	public function test_summary_reports_the_running_interpreter() {
 		$summary = WP_ServerInfo_PHP::summary();
 
-		$this->assertSame( phpversion(), $summary['PHP Version'] );
-		$this->assertSame( php_sapi_name(), $summary['Server API'] );
+		$this->assertSame( phpversion(), $summary['PHP Version'], 'The summary reports the running interpreter version.' );
+		$this->assertSame( php_sapi_name(), $summary['Server API'], 'And the running SAPI, not a configured one.' );
 		$this->assertNotEmpty( $summary['Loaded Extensions'], 'The summary reports the extensions of the interpreter actually running.' );
 	}
 
@@ -184,7 +184,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 		unset( $_SERVER['SERVER_ADDR'], $_SERVER['LOCAL_ADDR'] );
 
-		$this->assertSame( '', WP_ServerInfo_PHP::server_address() );
+		$this->assertSame( '', WP_ServerInfo_PHP::server_address(), 'With neither key set the address is empty rather than a guess.' );
 	}
 
 	/**
@@ -196,8 +196,8 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 			$this->markTestSkipped( 'This host has configured error_append_string, so it is not empty here.' );
 		}
 
-		$this->assertSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'error_append_string' ) );
-		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'precision' ) );
+		$this->assertSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'error_append_string' ), 'An empty directive reads as unavailable.' );
+		$this->assertNotSame( 'N/A', WP_ServerInfo_PHP::ini_value( 'precision' ), 'While one set to a value does not, so empty and zero are told apart.' );
 	}
 
 	/**
@@ -206,16 +206,17 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 	 * having been copied and half-edited.
 	 */
 	public function test_each_getter_reads_its_own_directive() {
-		$this->assertSame( ini_get( 'memory_limit' ), WP_ServerInfo_PHP::memory_limit() );
-		$this->assertSame( ini_get( 'upload_max_filesize' ), WP_ServerInfo_PHP::upload_max() );
-		$this->assertSame( ini_get( 'post_max_size' ), WP_ServerInfo_PHP::post_max() );
-		$this->assertSame( ini_get( 'max_execution_time' ), WP_ServerInfo_PHP::max_execution() );
+		$this->assertSame( ini_get( 'memory_limit' ), WP_ServerInfo_PHP::memory_limit(), 'The memory limit getter reads its own directive.' );
+		$this->assertSame( ini_get( 'upload_max_filesize' ), WP_ServerInfo_PHP::upload_max(), 'The upload getter reads its own.' );
+		$this->assertSame( ini_get( 'post_max_size' ), WP_ServerInfo_PHP::post_max(), 'The post getter reads its own.' );
+		$this->assertSame( ini_get( 'max_execution_time' ), WP_ServerInfo_PHP::max_execution(), 'And the execution getter reads its own, so none is transposed.' );
 	}
 
 	public function test_short_tag_matches_the_running_configuration() {
 		$this->assertSame(
 			ini_get( 'short_open_tag' ) ? 'On' : 'Off',
-			WP_ServerInfo_PHP::short_tag()
+			WP_ServerInfo_PHP::short_tag(),
+			'The short tag label follows the running configuration.'
 		);
 	}
 
@@ -234,7 +235,8 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 				'Loaded Configuration File',
 				'Loaded Extensions',
 			),
-			array_keys( $summary )
+			array_keys( $summary ),
+			'The summary holds exactly the rows the PHP tab renders, in order.'
 		);
 
 		foreach ( $summary as $label => $value ) {
@@ -253,7 +255,8 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertSame(
 			php_ini_loaded_file() ? php_ini_loaded_file() : 'N/A',
-			$summary['Loaded Configuration File']
+			$summary['Loaded Configuration File'],
+			'The loaded configuration file is a path or unavailable, never a boolean.'
 		);
 	}
 
@@ -266,7 +269,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertArrayHasKey( 'memory_limit', $ini, 'The directive list comes from ini_get_all, so memory_limit is in it.' );
 		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $ini, 'The directive list is ini_get_all only; a request header has no business in it.' );
-		$this->assertSame( ini_get( 'memory_limit' ), $ini['memory_limit']['local_value'] );
+		$this->assertSame( ini_get( 'memory_limit' ), $ini['memory_limit']['local_value'], 'The directive list carries the running value, not a cached one.' );
 	}
 
 	public function test_ini_directives_are_sorted_and_shaped() {
@@ -278,7 +281,7 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$sorted = $keys;
 		sort( $sorted );
 
-		$this->assertSame( $sorted, $keys );
+		$this->assertSame( $sorted, $keys, 'The directives are sorted, so the tab renders them in a predictable order.' );
 
 		$first = reset( $ini );
 		$this->assertIsArray( $first, 'Each directive is an array of its values.' );

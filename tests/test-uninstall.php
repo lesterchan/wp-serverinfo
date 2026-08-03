@@ -57,7 +57,8 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertSame(
 			array( 'dashboard_activity' ),
-			get_user_meta( $user_id, 'closedpostboxes_dashboard', true )
+			get_user_meta( $user_id, 'closedpostboxes_dashboard', true ),
+			'The widget is spliced out of the closed boxes, leaving the others as they were.'
 		);
 	}
 
@@ -70,7 +71,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 		$this->run_uninstall();
 
-		$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ) );
+		$this->assertSame( '', get_user_meta( $user_id, 'metaboxhidden_dashboard', true ), 'A meta key holding nothing else is deleted rather than left as an empty array.' );
 	}
 
 	/**
@@ -88,7 +89,8 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 				'normal' => 'dashboard_right_now,dashboard_activity',
 				'side'   => 'dashboard_quick_press',
 			),
-			get_user_meta( $user_id, 'meta-box-order_dashboard', true )
+			get_user_meta( $user_id, 'meta-box-order_dashboard', true ),
+			'The widget is spliced out of the ordering without disturbing the other columns.'
 		);
 	}
 
@@ -109,11 +111,13 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertSame(
 			array( 'dashboard_serverinfo_extra' ),
-			get_user_meta( $user_id, 'closedpostboxes_dashboard', true )
+			get_user_meta( $user_id, 'closedpostboxes_dashboard', true ),
+			'A widget whose id merely starts with ours is left alone.'
 		);
 		$this->assertSame(
 			array( 'normal' => 'dashboard_serverinfo_extra,my_dashboard_serverinfo' ),
-			get_user_meta( $user_id, 'meta-box-order_dashboard', true )
+			get_user_meta( $user_id, 'meta-box-order_dashboard', true ),
+			'And one that merely contains it, so the match is exact.'
 		);
 	}
 
@@ -122,7 +126,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 		$this->run_uninstall();
 
-		$this->assertSame( '', get_user_meta( $user_id, 'closedpostboxes_dashboard', true ) );
+		$this->assertSame( '', get_user_meta( $user_id, 'closedpostboxes_dashboard', true ), 'A user with no dashboard state is left untouched rather than given an empty one.' );
 	}
 
 	public function test_running_twice_is_harmless() {
@@ -133,7 +137,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 
 		$this->run_uninstall();
 
-		$this->assertSame( $after_first, get_user_meta( $user_id, 'meta-box-order_dashboard', true ) );
+		$this->assertSame( $after_first, get_user_meta( $user_id, 'meta-box-order_dashboard', true ), 'Running the uninstaller twice leaves the same result as running it once.' );
 	}
 
 	/**
@@ -169,7 +173,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	public function test_uninstall_file_refuses_to_run_outside_uninstall() {
 		$source = file_get_contents( $this->uninstall_file() );
 
-		$this->assertStringContainsString( "if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {", $source );
+		$this->assertStringContainsString( "if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {", $source, 'uninstall.php refuses to run outside the uninstall context.' );
 	}
 
 	/**
@@ -237,6 +241,6 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	 * lookup; the paged walk exists so that it does not have to.
 	 */
 	public function test_the_uninstaller_suppresses_no_sniffs() {
-		$this->assertStringNotContainsString( 'phpcs:', file_get_contents( $this->uninstall_file() ) );
+		$this->assertStringNotContainsString( 'phpcs:', file_get_contents( $this->uninstall_file() ), 'The uninstaller suppresses no sniff, so nothing is hidden from the standard.' );
 	}
 }

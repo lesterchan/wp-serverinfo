@@ -23,7 +23,7 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	public function test_version_constant_matches_the_header() {
 		preg_match( '/^ \* Version: (.+)$/m', $this->main_file(), $matches );
 
-		$this->assertSame( trim( $matches[1] ), WP_SERVERINFO_VERSION );
+		$this->assertSame( trim( $matches[1] ), WP_SERVERINFO_VERSION, 'The version constant matches the plugin header.' );
 	}
 
 	/**
@@ -34,11 +34,11 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 
 		preg_match( '/^Stable tag: (.+?)\s*$/m', $readme, $matches );
 
-		$this->assertSame( trim( $matches[1] ), WP_SERVERINFO_VERSION );
+		$this->assertSame( trim( $matches[1] ), WP_SERVERINFO_VERSION, 'And the readme stable tag, so all three cannot drift apart.' );
 	}
 
 	public function test_main_file_constant_points_at_the_main_file() {
-		$this->assertSame( dirname( __DIR__ ) . '/wp-serverinfo.php', WP_SERVERINFO_MAIN_FILE );
+		$this->assertSame( dirname( __DIR__ ) . '/wp-serverinfo.php', WP_SERVERINFO_MAIN_FILE, 'The main file constant points at the plugin file itself.' );
 	}
 
 	/**
@@ -50,14 +50,15 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 
 		$this->assertSame(
 			array( 'VERSION', 'SLUG', 'MAIN_FILE', 'DIR', 'URL', 'WIDGET_ID' ),
-			$matches[1]
+			$matches[1],
+			'The constants are defined in the documented order, which the includes below rely on.'
 		);
 	}
 
 	public function test_the_path_constants_carry_a_trailing_slash() {
-		$this->assertSame( dirname( __DIR__ ) . '/', WP_SERVERINFO_DIR );
-		$this->assertStringEndsWith( '/', WP_SERVERINFO_URL );
-		$this->assertStringEndsWith( '/wp-serverinfo/', WP_SERVERINFO_URL );
+		$this->assertSame( dirname( __DIR__ ) . '/', WP_SERVERINFO_DIR, 'The directory constant carries its trailing slash, so concatenation is safe.' );
+		$this->assertStringEndsWith( '/', WP_SERVERINFO_URL, 'And the URL constant.' );
+		$this->assertStringEndsWith( '/wp-serverinfo/', WP_SERVERINFO_URL, 'Which ends in the plugin directory rather than the plugins directory.' );
 	}
 
 	/**
@@ -71,8 +72,8 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	}
 
 	public function test_the_slug_constant_is_the_directory_name() {
-		$this->assertSame( 'wp-serverinfo', WP_SERVERINFO_SLUG );
-		$this->assertSame( basename( dirname( __DIR__ ) ), WP_SERVERINFO_SLUG );
+		$this->assertSame( 'wp-serverinfo', WP_SERVERINFO_SLUG, 'The slug constant is the plugin slug.' );
+		$this->assertSame( basename( dirname( __DIR__ ) ), WP_SERVERINFO_SLUG, 'Which is the directory name, so wordpress.org and the code agree.' );
 	}
 
 	public function test_every_class_is_loaded() {
@@ -92,7 +93,7 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	}
 
 	public function test_get_instance_returns_the_same_object() {
-		$this->assertSame( WP_ServerInfo::get_instance(), WP_ServerInfo::get_instance() );
+		$this->assertSame( WP_ServerInfo::get_instance(), WP_ServerInfo::get_instance(), 'get_instance() hands back the same object rather than building a second.' );
 	}
 
 	public function test_the_two_admin_surfaces_are_hooked() {
@@ -113,7 +114,7 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	public function test_every_include_is_required_before_the_bootstrap() {
 		preg_match_all( '#includes/(class-wp-serverinfo[a-z-]*\.php)#', $this->main_file(), $matches );
 
-		$this->assertSame( 'class-wp-serverinfo.php', end( $matches[1] ) );
+		$this->assertSame( 'class-wp-serverinfo.php', end( $matches[1] ), 'The bootstrap class is required last, so everything it uses is already loaded.' );
 
 		$shipped = array_map( 'basename', (array) glob( dirname( __DIR__ ) . '/includes/class-*.php' ) );
 
@@ -183,9 +184,9 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 	public function test_no_dead_back_compat_guard_survives() {
 		$code = wp_serverinfo_test_source_code();
 
-		$this->assertStringNotContainsString( 'PHP_VERSION_ID <', $code );
-		$this->assertStringNotContainsString( 'version_compare( PHP_VERSION', $code );
-		$this->assertStringNotContainsString( 'version_compare( $wp_version', $code );
-		$this->assertStringNotContainsString( 'function_exists( \'add_submenu_page\' )', $code );
+		$this->assertStringNotContainsString( 'PHP_VERSION_ID <', $code, 'No dead PHP version guard survives the floor being raised.' );
+		$this->assertStringNotContainsString( 'version_compare( PHP_VERSION', $code, 'In either spelling.' );
+		$this->assertStringNotContainsString( 'version_compare( $wp_version', $code, 'Nor a WordPress version guard.' );
+		$this->assertStringNotContainsString( 'function_exists( \'add_submenu_page\' )', $code, 'Nor a function_exists check for a function core has always had.' );
 	}
 }
