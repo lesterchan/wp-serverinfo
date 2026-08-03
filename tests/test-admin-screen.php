@@ -29,7 +29,7 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 
 		require_once ABSPATH . 'wp-admin/includes/admin.php';
 
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 		set_current_screen( 'tools' );
 
 		/*

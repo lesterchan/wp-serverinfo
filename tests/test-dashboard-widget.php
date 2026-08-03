@@ -49,7 +49,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	}
 
 	public function test_widget_is_registered_for_an_administrator() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$this->assertNotNull( $this->register(), 'An administrator gets the dashboard widget.' );
 	}
@@ -84,7 +84,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	}
 
 	public function test_widget_renders_each_section() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$html = $this->render();
 
@@ -100,7 +100,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	 * menu to Tools in 3.0.0.
 	 */
 	public function test_widget_links_to_the_report_under_tools() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$html = $this->render();
 
@@ -115,7 +115,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	 * wrapper and a <style> block carrying padding-left: 15px !important.
 	 */
 	public function test_widget_carries_no_inline_styles() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$html = $this->render();
 
@@ -131,7 +131,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	 * first pass, which is a visible change to a screen nobody diffs.
 	 */
 	public function test_version_prefix_stays_outside_the_bold() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$html = $this->render();
 
@@ -140,7 +140,7 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 	}
 
 	public function test_widget_markup_is_undamaged() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$html = $this->render();
 

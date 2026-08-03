@@ -34,7 +34,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	 * @return int User ID.
 	 */
 	private function user_with_dashboard_state() {
-		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$user_id = $this->create_admin();
 
 		update_user_meta( $user_id, 'closedpostboxes_dashboard', array( WP_SERVERINFO_WIDGET_ID, 'dashboard_activity' ) );
 		update_user_meta( $user_id, 'metaboxhidden_dashboard', array( WP_SERVERINFO_WIDGET_ID ) );
@@ -98,7 +98,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	 * A widget id that merely contains ours as a substring must survive.
 	 */
 	public function test_similarly_named_widgets_are_not_removed() {
-		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$user_id = $this->create_admin();
 
 		update_user_meta( $user_id, 'closedpostboxes_dashboard', array( 'dashboard_serverinfo_extra' ) );
 		update_user_meta(

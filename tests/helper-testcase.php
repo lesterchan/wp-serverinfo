@@ -11,6 +11,26 @@
 abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 
 	/**
+	 * Creates a user who may actually reach the plugin's screens.
+	 *
+	 * The Tools screen and the dashboard widget both take `manage_options`,
+	 * which core's map_meta_cap() does not touch under multisite, so no
+	 * grant_super_admin() here: a site administrator holds it on a network
+	 * exactly as on a single site. The plugin reports on the server the site
+	 * runs on, which every site administrator on a network may already see.
+	 *
+	 * Every administrator the suite creates goes through this, so the network
+	 * question is answered in one place rather than at each call site. Tests
+	 * that assert the *unprivileged* path set their own subscriber or editor
+	 * explicitly and must not be routed through here.
+	 *
+	 * @return int The new user's ID.
+	 */
+	protected function create_admin() {
+		return self::factory()->user->create( array( 'role' => 'administrator' ) );
+	}
+
+	/**
 	 * Start each test with no stored row, whatever the last one wrote.
 	 *
 	 * The plugin stores nothing now (STANDARDS.md 2.1), so nothing should ever
