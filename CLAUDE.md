@@ -2,10 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-WP-ServerInfo follows `_standards/STANDARDS.md` in the parent folder, which is
-the contract for all nineteen plugins in the collection. Where this file and
-that one disagree, that one wins.
-
 ## What it is
 
 A read-only report about the host: server and WordPress general info, every PHP
@@ -16,7 +12,7 @@ screen.
 
 ## Storage: none
 
-§2.1's exemption applies — no settings, no tables, not even the version row.
+No settings, no tables, not even a version marker row.
 
 **But there is state, and it is not in `wp_options`.** WordPress records the
 Dashboard widget's id in per-user meta the moment somebody closes, hides or
@@ -38,13 +34,11 @@ the two copies still agree.
   not a default.** No settings form, so `add_options_page()` would file a report
   under Settings; no list tables, so a top-level menu claims a sidebar slot for
   five read-only tables. Before 3.0.0 it was a submenu of `index.php` — a report
-  about the host inside the Dashboard menu, at a URL nobody could guess. §4.1
-  names this plugin explicitly.
+  about the host inside the Dashboard menu, at a URL nobody could guess.
 * **`WP_ServerInfo_MySQL` reads every row as an array (`ARRAY_A`), not an
   object.** `SHOW VARIABLES` and `SHOW TABLE STATUS` name their columns
   `Variable_name`, `Data_length` — MySQL's spellings, which WPCS would otherwise
-  be asked to accept as property names. wp-dbmanager reads the same rows the
-  same way; keep them consistent.
+  be asked to accept as property names.
 * **`variable()` returns null for a missing variable rather than dereferencing
   the row.** Not hypothetical: MySQL 8.0 removed `query_cache_size` entirely.
 * **`redis_stats()` catches `Throwable`, not `Exception`, and the comment says
@@ -71,6 +65,10 @@ the two copies still agree.
 
 ## Tests
 
+`bin/test.sh` runs PHPUnit, `bin/test-multisite.sh` the network pass, and
+`bin/test-e2e.sh` the Playwright suite. **Run them rather than trusting a note
+about their last result** — CI is the authority, and this file cannot be.
+
 `tests/` is one file per class plus `test-uninstall.php`, which is the
 interesting one: it builds the three kinds of per-user dashboard meta and
 asserts the widget id is removed from each *without* disturbing core's widgets.
@@ -82,8 +80,8 @@ link, which no PHPUnit test can see.
 * `wp-serverinfo.php:40` says "The last-run value is kept in the
   `wp_serverinfo_version` row." Nothing writes that row — commit `c407820`
   ("Store nothing at all") removed it. The README's 3.0.0 Upgrade Notice makes
-  the same claim, as do wp-relativedate's and wp-showhide's.
+  the same claim.
 * `uninstall.php`'s docblock refers to `WP_ServerInfo_Options`, a class that
   does not exist.
-* The README's Upgrade Notice opens "up from WordPress 4.0 and PHP 7.2", which
-  §14.1 calls out by name: the released 2.0.0 declared no `Requires PHP` at all.
+* The README's Upgrade Notice opens "up from WordPress 4.0 and PHP 7.2", but the
+  released 2.0.0 declared no `Requires PHP` at all.
