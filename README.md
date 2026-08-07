@@ -93,11 +93,10 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 
 ## Screenshots
 
-1. Dashboard widget
-2. General
-3. PHP
-4. MySQL
-5. memcached
+1. Tools -> WP-ServerInfo, the General tab: the host, the web server and the document root
+2. The PHP tab, which is phpinfo() inside the admin
+3. The MySQL tab, every server variable and its value
+4. The dashboard widget, a summary of all three
 
 ## Changelog
 ### 3.0.0
