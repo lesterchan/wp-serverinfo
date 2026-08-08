@@ -29,6 +29,12 @@ There is nothing to configure and no settings screen. Every figure is read live 
 ### Donations
 I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks, I will really appreciate it. If not feel free to use it without any obligations.
 
+## Installation
+
+1. Install and activate the plugin.
+
+That is the whole of it. There is no settings screen. The Server Information widget appears on your Dashboard and the full report is at `WP-Admin -> Tools -> WP-ServerInfo`. Both require the `manage_options` capability, because between them they report your document root, your server's IP address and your whole PHP and MySQL configuration.
+
 ## Usage
 Activate the plugin and you are done.
 
