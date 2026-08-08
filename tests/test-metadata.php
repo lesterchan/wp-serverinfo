@@ -206,9 +206,10 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 				'wp_serverinfo_capability',
 				'wp_serverinfo_memcached_server',
 				'wp_serverinfo_redis_server',
+				'wp_serverinfo_secret_directives',
 			),
 			$fired,
-			'Every hook this plugin fires is prefixed and documented, and there are exactly these three.'
+			'Every hook this plugin fires is prefixed and documented, and there are exactly these four.'
 		);
 
 		foreach ( $fired as $hook ) {
@@ -253,7 +254,7 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 			}
 		}
 
-		$this->assertSame( 3, $found, 'The plugin fires three hooks and no more.' );
+		$this->assertSame( 4, $found, 'The plugin fires four hooks and no more.' );
 	}
 
 	/**

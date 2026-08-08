@@ -232,10 +232,85 @@ class WP_ServerInfo_PHP {
 	}
 
 	/**
+	 * Directive names whose value is a credential rather than configuration.
+	 *
+	 * The list is for the ones that do not announce themselves in their name,
+	 * which the pattern in is_secret_directive() would otherwise miss.
+	 * session.save_path is a filesystem path on most hosts and a
+	 * "tcp://host:6379?auth=..." DSN on the ones keeping sessions in redis, and
+	 * nothing about the name says which. sendmail_path is a command line, and on
+	 * an ssmtp or msmtp host it carries -au and -ap. mail.force_extra_parameters
+	 * is appended to that same command line.
+	 *
+	 * @return string[] Directive names hidden whatever their value looks like.
+	 */
+	public static function secret_directives() {
+		$names = array(
+			'mail.force_extra_parameters',
+			'mysql.default_password',
+			'mysqli.default_pw',
+			'sendmail_path',
+			'session.save_path',
+			'xdebug.cloud_id',
+		);
+
+		/**
+		 * Filters the directives whose values the PHP tab refuses to print.
+		 *
+		 * For a directive an extension adds whose name does not read as a
+		 * secret. The pattern in WP_ServerInfo_PHP::is_secret_directive()
+		 * already covers the ones that do.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string[] $names Directive names to hide.
+		 */
+		return (array) apply_filters( 'wp_serverinfo_secret_directives', $names );
+	}
+
+	/**
+	 * Whether a directive's value is a secret this report must not print.
+	 *
+	 * A pattern as well as a list, because the list can only name extensions
+	 * somebody thought of. Most of the credential-bearing directives on a real
+	 * host belong to extensions this plugin has never heard of -- a licence key,
+	 * an API key, a server token -- and they are recognisable by name even when
+	 * the extension is not: the pattern is what covers newrelic.license,
+	 * datadog.api_key and blackfire.server_token without naming any of them.
+	 *
+	 * @param string $directive Directive name.
+	 * @return bool
+	 */
+	public static function is_secret_directive( $directive ) {
+		if ( in_array( $directive, self::secret_directives(), true ) ) {
+			return true;
+		}
+
+		/*
+		 * Anchored on a word boundary at both ends rather than matched loosely,
+		 * so "key" catches api_key and license.key without also catching
+		 * monkey_patch, and "auth" does not catch oauth_enabled.
+		 */
+		return 1 === preg_match(
+			'/(?:^|[._-])(?:pw|passwd|password|secret|token|keys?|licen[cs]e|auth|credentials?|dsn|salt)(?:[._-]|$)/i',
+			$directive
+		);
+	}
+
+	/**
 	 * Get every ini directive with its local and master value, sorted by name.
 	 *
-	 * Built from ini_get_all() rather than by scraping phpinfo() output, so
-	 * the panel cannot leak environment variables or request headers.
+	 * Built from ini_get_all() rather than by scraping phpinfo() output, so the
+	 * panel cannot leak environment variables or request headers -- and the
+	 * values that are secrets in their own right are hidden below, which is the
+	 * half that reasoning does not cover. ini_get_all() is not affected by
+	 * disable_functions=phpinfo either, so on a host that deliberately turned
+	 * phpinfo() off this panel is the way the same values would come back.
+	 *
+	 * The row is kept and its value replaced, never dropped: "this directive is
+	 * set and you are not being shown it" and "this directive is not set" are
+	 * different facts about the host, and a report that cannot tell them apart
+	 * is less useful than one that admits the gap.
 	 *
 	 * @return array Directive => array of values, or an empty array.
 	 */
@@ -248,6 +323,22 @@ class WP_ServerInfo_PHP {
 
 		if ( empty( $ini ) ) {
 			return array();
+		}
+
+		$marker = __( '[hidden]', 'wp-serverinfo' );
+
+		foreach ( $ini as $directive => $values ) {
+			if ( ! self::is_secret_directive( $directive ) ) {
+				continue;
+			}
+
+			foreach ( array( 'local_value', 'global_value' ) as $key ) {
+				// An unset directive has nothing to hide, and marking it would
+				// claim a credential is configured where none is.
+				if ( isset( $values[ $key ] ) && '' !== $values[ $key ] ) {
+					$ini[ $directive ][ $key ] = $marker;
+				}
+			}
 		}
 
 		ksort( $ini );

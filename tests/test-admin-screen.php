@@ -227,6 +227,13 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	/**
 	 * 2.0.0 rebuilt this panel from ini_get_all() specifically so it stops
 	 * dumping phpinfo()'s environment and request-header sections.
+	 *
+	 * Note what this can and cannot say. Neither a request header nor a PHP
+	 * constant can appear in ini_get_all() output by construction, so these
+	 * three assertions cannot fail however the panel is rewritten -- they record
+	 * the 2.0.0 decision rather than guard it. The directive values that *are*
+	 * credentials are the half that needs a test that can fail, and that is the
+	 * one below.
 	 */
 	public function test_php_tab_does_not_leak_the_environment() {
 		$html = $this->render( 'php' );
@@ -234,7 +241,42 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 		$this->assertStringContainsString( 'Loaded Extensions', $html, 'The PHP tab reports the interpreter configuration.' );
 		$this->assertStringNotContainsString( 'HTTP_COOKIE', $html, 'Without leaking request headers.' );
 		$this->assertStringNotContainsString( 'DB_PASSWORD', $html, 'Or naming the database password constant.' );
-		$this->assertStringNotContainsString( DB_PASSWORD, $html, 'Or, worse, printing its value.' );
+	}
+
+	/**
+	 * The panel prints every ini directive, and on a real host a handful of them
+	 * are credentials rather than configuration -- mysqli.default_pw, a redis
+	 * DSN in session.save_path, an ssmtp password in sendmail_path, an APM
+	 * licence key. Those are hidden, and the row is kept so the reader can still
+	 * tell a configured secret from an absent one.
+	 */
+	public function test_php_tab_hides_the_value_of_a_directive_that_holds_a_credential() {
+		// memory_limit stands in for a real secret: it is guaranteed to be set
+		// on a test host, where none of the genuine ones are.
+		add_filter(
+			'wp_serverinfo_secret_directives',
+			static function ( $names ) {
+				$names[] = 'memory_limit';
+
+				return $names;
+			}
+		);
+
+		$html = $this->render( 'php' );
+
+		// Matched against the row rather than the whole page: another directive
+		// may legitimately share memory_limit's value, and asserting on the bare
+		// string would fail on that instead of on the thing under test.
+		$this->assertStringContainsString(
+			'<tr><td>memory_limit</td><td>[hidden]</td>',
+			$html,
+			'The row survives and its value is replaced by the marker.'
+		);
+		$this->assertStringNotContainsString(
+			'<tr><td>memory_limit</td><td>' . esc_html( ini_get( 'memory_limit' ) ) . '</td>',
+			$html,
+			'The real value does not reach the page.'
+		);
 	}
 
 	/**

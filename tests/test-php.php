@@ -288,4 +288,102 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$this->assertArrayHasKey( 'local_value', $first, 'Each directive carries its local_value, which the screen reads.' );
 		$this->assertArrayHasKey( 'global_value', $first, 'Each directive carries its global_value, which the screen reads.' );
 	}
+
+	/**
+	 * Several of these belong to extensions the plugin never names, which is the
+	 * point of matching on the shape of the name rather than on a list.
+	 */
+	public function test_a_directive_name_that_reads_as_a_credential_is_recognised() {
+		$secrets = array(
+			'mysqli.default_pw',
+			'newrelic.license',
+			'datadog.api_key',
+			'blackfire.server_token',
+			'tideways.api_key',
+			'session.save_path',
+			'sendmail_path',
+			'some_extension.secret',
+			'some_extension.auth',
+			'some_extension.dsn',
+		);
+
+		foreach ( $secrets as $directive ) {
+			$this->assertTrue(
+				WP_ServerInfo_PHP::is_secret_directive( $directive ),
+				$directive . ' holds a credential on some host, so the panel must not print it.'
+			);
+		}
+	}
+
+	/**
+	 * A pattern loose enough to catch every secret catches ordinary directives
+	 * too, and a report that hides memory_limit is not a report.
+	 */
+	public function test_an_ordinary_directive_name_is_not_mistaken_for_a_credential() {
+		$ordinary = array(
+			'memory_limit',
+			'max_execution_time',
+			'post_max_size',
+			'display_errors',
+			'oauth_enabled',
+			'monkey_patch',
+			'session.use_strict_mode',
+			'opcache.enable',
+		);
+
+		foreach ( $ordinary as $directive ) {
+			$this->assertFalse(
+				WP_ServerInfo_PHP::is_secret_directive( $directive ),
+				$directive . ' is configuration, and hiding it would make the panel useless.'
+			);
+		}
+	}
+
+	public function test_a_secret_directive_is_hidden_and_its_row_survives() {
+		// memory_limit stands in for a real secret: it is guaranteed to be set,
+		// where mysqli.default_pw is guaranteed not to be on a test host.
+		add_filter(
+			'wp_serverinfo_secret_directives',
+			static function ( $names ) {
+				$names[] = 'memory_limit';
+
+				return $names;
+			}
+		);
+
+		$ini = WP_ServerInfo_PHP::ini_directives();
+
+		$this->assertArrayHasKey( 'memory_limit', $ini, 'The row survives, because "set but hidden" and "not set" are different facts.' );
+		$this->assertSame( '[hidden]', $ini['memory_limit']['local_value'], 'A configured secret is replaced by the marker, not printed.' );
+		$this->assertNotSame( ini_get( 'memory_limit' ), $ini['memory_limit']['local_value'], 'The real value does not reach the panel.' );
+	}
+
+	public function test_an_unset_secret_directive_is_left_empty_rather_than_marked() {
+		$ini   = WP_ServerInfo_PHP::ini_directives();
+		$empty = '';
+
+		foreach ( $ini as $directive => $values ) {
+			if ( isset( $values['local_value'] ) && '' === $values['local_value'] ) {
+				$empty = $directive;
+				break;
+			}
+		}
+
+		if ( '' === $empty ) {
+			$this->markTestSkipped( 'This host has no unset directive to stand in for an unconfigured credential.' );
+		}
+
+		add_filter(
+			'wp_serverinfo_secret_directives',
+			static function ( $names ) use ( $empty ) {
+				$names[] = $empty;
+
+				return $names;
+			}
+		);
+
+		$ini = WP_ServerInfo_PHP::ini_directives();
+
+		$this->assertSame( '', $ini[ $empty ]['local_value'], 'Marking an unset directive would claim a credential is configured where none is.' );
+	}
 }

@@ -112,6 +112,7 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 * NEW: `wp_serverinfo_memcached_server` and `wp_serverinfo_redis_server` filters to point the memcached and Redis panels at a server other than localhost
 * NEW: `wp_serverinfo_capability` filter, so the report and the widget can be handed to somebody other than an administrator, separately
 * NEW: The memcached and Redis panels say the server is unreachable instead of rendering an empty panel
+* FIXED: The PHP tab printed the value of every ini directive, including the ones that hold credentials rather than configuration — `mysqli.default_pw`, a redis DSN in `session.save_path`, an ssmtp password in `sendmail_path`, and the licence keys and API tokens that monitoring extensions add. Those values now read `[hidden]`; the directive is still listed, so a configured secret can still be told apart from an absent one. `wp_serverinfo_secret_directives` filters the list
 * NEW: A `wp_serverinfo_version` row recording the version last run, and an `uninstall.php` that deletes it on a single site and across a network
 * NEW: Uninstalling now clears the per-user dashboard state WordPress records for the Server Information widget, which previously stayed in the database forever
 * FIXED: "Attempt to read property on null" on every render of the General tab and the dashboard widget, because MySQL 8.0 removed `query_cache_size` and the missing row was dereferenced anyway

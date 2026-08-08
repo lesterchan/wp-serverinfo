@@ -79,6 +79,18 @@ class WP_ServerInfo_Dashboard {
 	 */
 	public static function render() {
 		/*
+		 * The gate that matters is on register_widget() above, because
+		 * wp_dashboard() renders only what was registered. This second check is
+		 * here because the method is public and prints the document root and the
+		 * server's own address: a caller arriving by any other route -- a
+		 * do_meta_boxes() on the dashboard screen, a future ajax path -- must not
+		 * get them for free. The report screen already checks in both places.
+		 */
+		if ( ! current_user_can( WP_ServerInfo_Admin::capability( 'widget' ) ) ) {
+			return;
+		}
+
+		/*
 		 * dir="ltr", and nothing else. Every value below is latin text whatever
 		 * the admin language is, so the widget has to read left to right even on
 		 * an RTL install -- but before 3.0.0 that meant an inline style attribute

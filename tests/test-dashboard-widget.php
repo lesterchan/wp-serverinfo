@@ -139,6 +139,35 @@ class WP_ServerInfo_Dashboard_Test extends WP_ServerInfo_TestCase {
 		$this->assertStringNotContainsString( '<strong>v' . PHP_VERSION, $html, 'Rather than inside it, which reads as part of the version.' );
 	}
 
+	/**
+	 * The registration check is the one core consults, because wp_dashboard()
+	 * renders only what was registered. This asserts the second one, on render()
+	 * itself: the method is public and prints the document root and the server's
+	 * address, so a caller arriving by any other route must get nothing.
+	 */
+	public function test_render_refuses_a_user_who_may_not_see_the_widget() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		// Called directly rather than through render() above, which registers
+		// first and asserts it worked -- for this user it correctly does not,
+		// and the method under test is the one core would never reach.
+		ob_start();
+		WP_ServerInfo_Dashboard::render();
+		$html = ob_get_clean();
+
+		$this->assertSame( '', trim( $html ), 'render() prints nothing for a user the widget is not registered for.' );
+	}
+
+	public function test_render_refuses_a_logged_out_visitor() {
+		wp_set_current_user( 0 );
+
+		ob_start();
+		WP_ServerInfo_Dashboard::render();
+		$html = ob_get_clean();
+
+		$this->assertSame( '', trim( $html ), 'And nothing at all for somebody who is not signed in.' );
+	}
+
 	public function test_widget_markup_is_undamaged() {
 		wp_set_current_user( $this->create_admin() );
 
