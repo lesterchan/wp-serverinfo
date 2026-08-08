@@ -127,15 +127,53 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
-	 * The page exposes the whole server configuration, so it is
-	 * manage_options and not something weaker.
+	 * The page exposes the whole server configuration, so it is manage_options
+	 * and not something weaker -- and on a network it is higher still, because
+	 * manage_options there belongs to a tenant rather than to the operator.
 	 */
-	public function test_page_requires_manage_options() {
-		$entry = $this->menu_entry();
+	public function test_page_requires_the_right_capability_for_the_install() {
+		$entry    = $this->menu_entry();
+		$expected = is_multisite() ? 'manage_network_options' : 'manage_options';
 
 		$this->assertNotNull( $entry, 'The WP-ServerInfo page was not registered.' );
-		$this->assertSame( 'manage_options', $entry[1], 'The menu entry requires manage_options.' );
-		$this->assertSame( 'manage_options', WP_ServerInfo_Admin::CAPABILITY, 'And the constant says the same, so the two cannot drift.' );
+		$this->assertSame( $expected, $entry[1], 'The menu entry requires the capability for this kind of install.' );
+		$this->assertSame( $expected, WP_ServerInfo_Admin::capability(), 'And capability() says the same, so the two cannot drift.' );
+	}
+
+	/**
+	 * Core denies a subsite administrator Site Health, which reports strictly
+	 * less than this screen does: view_site_health_checks needs install_plugins,
+	 * and map_meta_cap() resolves that to do_not_allow on multisite for anyone
+	 * who is not a super admin. This screen used to be open to them.
+	 */
+	public function test_a_site_administrator_on_a_network_cannot_reach_the_report() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'The distinction only exists on a network.' );
+		}
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertFalse(
+			current_user_can( WP_ServerInfo_Admin::capability( 'report' ) ),
+			'A site administrator is a tenant of the network, not its operator.'
+		);
+		$this->assertFalse(
+			current_user_can( WP_ServerInfo_Admin::capability( 'widget' ) ),
+			'And the dashboard widget prints the same things, so it is gated the same way.'
+		);
+	}
+
+	public function test_a_single_site_administrator_still_reaches_the_report() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'On a single site there is no network to be a tenant of.' );
+		}
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertTrue(
+			current_user_can( WP_ServerInfo_Admin::capability( 'report' ) ),
+			'Nothing changes for the installs that are not networks.'
+		);
 	}
 
 	/**

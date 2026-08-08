@@ -35,13 +35,34 @@ class WP_ServerInfo_Admin {
 	const PAGE = 'wp-serverinfo';
 
 	/**
-	 * The capability the report screen requires.
+	 * The capability the report screen requires on a single site.
 	 *
 	 * The page reports the document root, the server IP and every PHP and MySQL
 	 * directive, so it is manage_options and not something weaker. WP-ServerInfo
 	 * has never shipped a capability of its own.
 	 */
 	const CAPABILITY = 'manage_options';
+
+	/**
+	 * The capability the report screen requires on a network.
+	 *
+	 * On multisite manage_options belongs to a *site* administrator, and what
+	 * this screen prints is not about their site -- it is the document root, the
+	 * server's own address, the loaded php.ini, every ini directive and every
+	 * MySQL server variable, none of which a tenant of a network is entitled to
+	 * merely because they administer one site on it. Core draws that line for
+	 * the same information: wp_maybe_grant_site_health_caps() hands out
+	 * view_site_health_checks only to somebody holding install_plugins, and
+	 * map_meta_cap() resolves install_plugins to do_not_allow on multisite for
+	 * anyone who is not a super admin. Site Health is therefore closed to a
+	 * subsite administrator while this screen was open, reporting strictly more.
+	 *
+	 * A network that does want to delegate it says so through the filter below,
+	 * which is what the filter is for.
+	 *
+	 * @since 3.0.0
+	 */
+	const NETWORK_CAPABILITY = 'manage_network_options';
 
 	/**
 	 * The capability a screen requires, filtered.
@@ -56,6 +77,7 @@ class WP_ServerInfo_Admin {
 	 * @return string
 	 */
 	public static function capability( $context = 'report' ) {
+		$capability = is_multisite() ? self::NETWORK_CAPABILITY : self::CAPABILITY;
 		/**
 		 * Filters the capability a WP-ServerInfo surface requires.
 		 *
@@ -64,7 +86,7 @@ class WP_ServerInfo_Admin {
 		 * @param string $capability Capability name.
 		 * @param string $context    Which surface is asking: 'report' or 'widget'.
 		 */
-		return (string) apply_filters( 'wp_serverinfo_capability', self::CAPABILITY, $context );
+		return (string) apply_filters( 'wp_serverinfo_capability', $capability, $context );
 	}
 
 	/**

@@ -13,11 +13,20 @@ abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 	/**
 	 * Creates a user who may actually reach the plugin's screens.
 	 *
-	 * The Tools screen and the dashboard widget both take `manage_options`,
-	 * which core's map_meta_cap() does not touch under multisite, so no
-	 * grant_super_admin() here: a site administrator holds it on a network
-	 * exactly as on a single site. The plugin reports on the server the site
-	 * runs on, which every site administrator on a network may already see.
+	 * Super admin on a network, and that reverses what this helper used to say.
+	 * The old reasoning was that `manage_options` belongs to a site
+	 * administrator on a network exactly as on a single site, and that the
+	 * server this site runs on is something they may already see. The second
+	 * half is what does not hold: the report is the document root, the server's
+	 * own address, the loaded php.ini, every ini directive and every MySQL
+	 * server variable, and core closes Site Health -- strictly less information
+	 * -- to that same person, because `view_site_health_checks` needs
+	 * `install_plugins`, which `map_meta_cap()` resolves to `do_not_allow` on
+	 * multisite for anyone who is not a super admin.
+	 *
+	 * So the network gate is `manage_network_options` now, and the fixture has
+	 * to represent the operator who actually holds it. A network that wants to
+	 * delegate the screen says so through `wp_serverinfo_capability`.
 	 *
 	 * Every administrator the suite creates goes through this, so the network
 	 * question is answered in one place rather than at each call site. Tests
@@ -27,7 +36,13 @@ abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 	 * @return int The new user's ID.
 	 */
 	protected function create_admin() {
-		return self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+
+		if ( is_multisite() ) {
+			grant_super_admin( $user_id );
+		}
+
+		return $user_id;
 	}
 
 	/**
