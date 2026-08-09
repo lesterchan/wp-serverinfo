@@ -129,6 +129,7 @@ It is built from `ini_get_all()`, so it lists directives and their values and no
 * CHANGED: Remove the dead `phpinfo()` scraping fallback in the GD version probe
 * CHANGED: The screens use core's own table and tab classes, and carry no inline styles at all. The RTL handling is one `dir` attribute rather than a stylesheet with a physical `text-align` and an `!important`
 * CHANGED: Add a PHPUnit test suite, both single site and multisite, and GitHub Actions CI
+* FIXED: The server load average was formatted by only one of the four ways it is read, so what the General table showed depended on which one your host took. Every branch answers with a number now and it is formatted once, with the decimal separator your locale uses rather than always a point
 
 ## Upgrade Notice
 

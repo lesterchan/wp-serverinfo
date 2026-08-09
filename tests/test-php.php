@@ -141,11 +141,35 @@ class WP_ServerInfo_PHP_Test extends WP_ServerInfo_TestCase {
 		$load = WP_ServerInfo_PHP::server_load();
 
 		if ( 'N/A' !== $load ) {
-			$this->assertIsNumeric( $load, 'When the server reports a load average, it is a number.' );
+			$this->assertMatchesRegularExpression( '/^\d+\.\d{2}$/', $load, 'A load average is a number to two decimals, whichever branch read it.' );
 			$this->assertGreaterThanOrEqual( 0, (float) $load, 'A load average is never negative.' );
 		} else {
 			$this->assertSame( 'N/A', $load, 'Where the load average cannot be read, it is unavailable rather than zero.' );
 		}
+	}
+
+	/**
+	 * The load average takes the reader's decimal separator.
+	 *
+	 * Only one of the four branches used to format at all, so what the screen
+	 * showed depended on which one the host took -- and it was always a point,
+	 * which is not the separator most of the world writes numbers with.
+	 */
+	public function test_server_load_uses_the_locale_decimal_separator() {
+		if ( 'N/A' === WP_ServerInfo_PHP::server_load() ) {
+			$this->markTestSkipped( 'This host reports no load average, so there is no number to format.' );
+		}
+
+		global $wp_locale;
+
+		$point                                     = $wp_locale->number_format['decimal_point'];
+		$wp_locale->number_format['decimal_point'] = ',';
+
+		$load = WP_ServerInfo_PHP::server_load();
+
+		$wp_locale->number_format['decimal_point'] = $point;
+
+		$this->assertMatchesRegularExpression( '/^\d+,\d{2}$/', $load, 'The separator comes from the locale rather than being hardcoded.' );
 	}
 
 	/**

@@ -138,10 +138,18 @@ class WP_ServerInfo_PHP {
 	/**
 	 * Get the current server load average (Unix-like hosts only).
 	 *
+	 * Every branch below answers with a float and the formatting happens once,
+	 * at the end. Before that only the sys_getloadavg() branch was formatted at
+	 * all, so what the screen showed depended on which branch the host took --
+	 * two decimals from the first, whatever /proc happened to hold from the
+	 * second, whatever uptime printed from the last two. It is one shape now,
+	 * and number_format_i18n() gives it the reader's decimal separator rather
+	 * than always a point.
+	 *
 	 * @return string 1-minute load average, or a localized "N/A".
 	 */
 	public static function server_load() {
-		$server_load = '';
+		$server_load = null;
 
 		// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions, WordPress.PHP.DiscouragedPHPFunctions -- probing the host for load average; @-suppression and low-level/shell calls are intentional and gated behind availability and disable_functions checks.
 		if ( PHP_OS !== 'WINNT' && PHP_OS !== 'WIN32' ) {
@@ -171,49 +179,49 @@ class WP_ServerInfo_PHP {
 			if ( function_exists( 'sys_getloadavg' ) && ! in_array( 'sys_getloadavg', $disabled_functions, true ) ) {
 				$load_avg = sys_getloadavg();
 				if ( is_array( $load_avg ) && isset( $load_avg[0] ) ) {
-					$server_load = number_format( (float) $load_avg[0], 2, '.', '' );
+					$server_load = (float) $load_avg[0];
 				}
 			}
 
-			if ( '' === $server_load && file_exists( '/proc/loadavg' ) ) {
+			if ( null === $server_load && file_exists( '/proc/loadavg' ) ) {
 				$fh = @fopen( '/proc/loadavg', 'r' );
 				if ( $fh ) {
 					$data = @fread( $fh, 6 );
 					@fclose( $fh );
 					if ( is_string( $data ) && '' !== $data ) {
 						$load_avg    = explode( ' ', $data );
-						$server_load = trim( $load_avg[0] );
+						$server_load = (float) trim( $load_avg[0] );
 					}
 				}
 			}
 
-			if ( '' === $server_load && function_exists( 'exec' ) && ! in_array( 'exec', $disabled_functions, true ) ) {
+			if ( null === $server_load && function_exists( 'exec' ) && ! in_array( 'exec', $disabled_functions, true ) ) {
 				$data = @exec( 'uptime 2>&1', $output, $return_var );
 				if ( 0 === $return_var && ! empty( $data ) ) {
 					preg_match( '/load average[s]?:\s*([0-9\.]+)/', $data, $matches );
 					if ( isset( $matches[1] ) ) {
-						$server_load = $matches[1];
+						$server_load = (float) $matches[1];
 					}
 				}
 			}
 
-			if ( '' === $server_load && function_exists( 'shell_exec' ) && ! in_array( 'shell_exec', $disabled_functions, true ) ) {
+			if ( null === $server_load && function_exists( 'shell_exec' ) && ! in_array( 'shell_exec', $disabled_functions, true ) ) {
 				$data = @shell_exec( 'uptime 2>&1' );
 				if ( ! empty( $data ) ) {
 					preg_match( '/load average[s]?:\s*([0-9\.]+)/', $data, $matches );
 					if ( isset( $matches[1] ) ) {
-						$server_load = $matches[1];
+						$server_load = (float) $matches[1];
 					}
 				}
 			}
 		}
 		// phpcs:enable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions, WordPress.PHP.DiscouragedPHPFunctions
 
-		if ( '' === $server_load ) {
+		if ( null === $server_load ) {
 			return __( 'N/A', 'wp-serverinfo' );
 		}
 
-		return $server_load;
+		return number_format_i18n( $server_load, 2 );
 	}
 
 	/**
