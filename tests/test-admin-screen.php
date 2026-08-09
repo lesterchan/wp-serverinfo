@@ -151,7 +151,9 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 			$this->markTestSkipped( 'The distinction only exists on a network.' );
 		}
 
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		// Deliberately not create_admin(): that one grants super admin on a
+		// network, which is the person this test is asserting is *not* asking.
+		wp_set_current_user( $this->create_site_administrator() );
 
 		$this->assertFalse(
 			current_user_can( WP_ServerInfo_Admin::capability( 'report' ) ),
@@ -168,7 +170,7 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 			$this->markTestSkipped( 'On a single site there is no network to be a tenant of.' );
 		}
 
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->create_admin() );
 
 		$this->assertTrue(
 			current_user_can( WP_ServerInfo_Admin::capability( 'report' ) ),

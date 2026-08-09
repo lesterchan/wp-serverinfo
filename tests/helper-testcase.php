@@ -35,6 +35,25 @@ abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 	 *
 	 * @return int The new user's ID.
 	 */
+	/**
+	 * An administrator of this site, and on a network nothing more than that.
+	 *
+	 * The tenant, where create_admin() below makes the operator. The two are
+	 * the same person on a single site and are the whole point on a network,
+	 * where this one holds manage_options and not manage_network_options --
+	 * which is exactly who the report has to be closed to.
+	 *
+	 * §7.2.2 keeps direct factory calls for administrators in this file, so a
+	 * test wanting the unprivileged side asks for it by name rather than
+	 * open-coding a role and leaving the next reader to work out whether the
+	 * missing grant_super_admin() was deliberate.
+	 *
+	 * @return int The new user's ID.
+	 */
+	protected function create_site_administrator() {
+		return self::factory()->user->create( array( 'role' => 'administrator' ) );
+	}
+
 	protected function create_admin() {
 		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 

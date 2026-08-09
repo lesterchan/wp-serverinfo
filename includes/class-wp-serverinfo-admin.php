@@ -77,7 +77,6 @@ class WP_ServerInfo_Admin {
 	 * @return string
 	 */
 	public static function capability( $context = 'report' ) {
-		$capability = is_multisite() ? self::NETWORK_CAPABILITY : self::CAPABILITY;
 		/**
 		 * Filters the capability a WP-ServerInfo surface requires.
 		 *
@@ -86,7 +85,11 @@ class WP_ServerInfo_Admin {
 		 * @param string $capability Capability name.
 		 * @param string $context    Which surface is asking: 'report' or 'widget'.
 		 */
-		return (string) apply_filters( 'wp_serverinfo_capability', $capability, $context );
+		return (string) apply_filters(
+			'wp_serverinfo_capability',
+			is_multisite() ? self::NETWORK_CAPABILITY : self::CAPABILITY,
+			$context
+		);
 	}
 
 	/**
