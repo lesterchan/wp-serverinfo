@@ -48,6 +48,11 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 	 * they are the only way to reach a Memcached or Redis server that is not on
 	 * localhost, which is the reason anybody would go looking.
 	 *
+	 * No option name is among these. The notice tells the owner the plugin
+	 * stores nothing, and naming a row would send them looking for one no
+	 * released version ever wrote -- only an early pre-release 3.0.0 build did,
+	 * which is the one case uninstall.php still cleans up.
+	 *
 	 * @return string[]
 	 */
 	protected function upgrade_notice_subjects() {
@@ -69,7 +74,6 @@ class WP_ServerInfo_Metadata_Test extends Plugin_Metadata_TestCase {
 			'`wp_serverinfo_capability`',
 			'`wp_serverinfo_memcached_server`',
 			'`wp_serverinfo_redis_server`',
-			'`wp_serverinfo_version`',
 		);
 	}
 

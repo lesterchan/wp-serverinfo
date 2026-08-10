@@ -10,10 +10,11 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Wires the two admin surfaces up to WordPress.
  *
- * The plugin stores no settings and no tables: everything it displays is read
- * live from the host on each render, which is the whole point of it. The one
- * row it does keep is wp_serverinfo_version, so that a future release can tell
- * what it is upgrading from -- see WP_ServerInfo_Options.
+ * The plugin stores no settings, no tables and no version row: everything it
+ * displays is read live from the host on each render, which is the whole point
+ * of it. There is no options class either, and nothing here to migrate -- a
+ * future release that genuinely needs state introduces a row then, and reads
+ * its absence as a fresh install exactly as every other plugin here does.
  */
 class WP_ServerInfo {
 
