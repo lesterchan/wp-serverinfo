@@ -74,14 +74,3 @@ interesting one: it builds the three kinds of per-user dashboard meta and
 asserts the widget id is removed from each *without* disturbing core's widgets.
 `tests/e2e/serverinfo.spec.js` covers the tab strip and the widget's "View all"
 link, which no PHPUnit test can see.
-
-## Known discrepancies
-
-* `wp-serverinfo.php:40` says "The last-run value is kept in the
-  `wp_serverinfo_version` row." Nothing writes that row — commit `c407820`
-  ("Store nothing at all") removed it. The README's 3.0.0 Upgrade Notice makes
-  the same claim.
-* `uninstall.php`'s docblock refers to `WP_ServerInfo_Options`, a class that
-  does not exist.
-* The README's Upgrade Notice opens "up from WordPress 4.0 and PHP 7.2", but the
-  released 2.0.0 declared no `Requires PHP` at all.

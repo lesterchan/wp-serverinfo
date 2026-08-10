@@ -4,14 +4,16 @@
  *
  * Runs with the plugin inactive, so nothing here may depend on the plugin's own
  * classes or constants being loaded. The option name and the widget id are
- * therefore spelled out rather than read from WP_ServerInfo_Options and
- * WP_SERVERINFO_WIDGET_ID; tests/test-metadata.php asserts that the two copies
- * still agree.
+ * therefore spelled out rather than read from WP_SERVERINFO_WIDGET_ID or a
+ * class constant; tests/test-metadata.php asserts that the two copies still
+ * agree.
  *
- * There are two kinds of leftover. One is the plugin's own option row. The other
- * is per-user dashboard state WordPress writes on its behalf: closing, hiding or
- * reordering the Server Information widget records its id in user meta, and that
- * meta survives the plugin being deleted.
+ * There are two kinds of leftover. One is a version row that only early
+ * pre-release 3.0.0 builds ever wrote -- the released plugin stores nothing --
+ * removed here so those installs are cleaned up too. The other is per-user
+ * dashboard state WordPress writes on its behalf: closing, hiding or reordering
+ * the Server Information widget records its id in user meta, and that meta
+ * survives the plugin being deleted.
  *
  * @package WP-ServerInfo
  */

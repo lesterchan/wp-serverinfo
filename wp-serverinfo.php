@@ -37,7 +37,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * WP-ServerInfo version. The last-run value is kept in the wp_serverinfo_version row.
+ * WP-ServerInfo version. Displayed only; the plugin stores no version row.
  */
 define( 'WP_SERVERINFO_VERSION', '3.0.0' );
 
