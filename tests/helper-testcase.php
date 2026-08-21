@@ -91,16 +91,14 @@ abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Run the uninstall routine.
+	 * Run the uninstaller, however many times a suite asks for it.
 	 *
-	 * The uninstall file declares functions at file scope, so it can only be
-	 * included once in a process; a second require_once is a silent no-op and
-	 * would leave a test asserting against rows nothing had removed. The first
-	 * caller includes the file, which is what exercises its multisite branch,
-	 * and every later caller runs the routine for the current site directly.
-	 *
-	 * This is why only one place in the suite may include uninstall.php, and it
-	 * is here: test-metadata.php and test-uninstall.php both want it.
+	 * The uninstaller does its work in the file body, and PHP will not run a
+	 * file body twice -- so the first caller in a process gets the real thing
+	 * and any later one would silently get nothing at all. The require is
+	 * therefore only there to guarantee the function exists, and the fan-out is
+	 * driven from here: the same loop the file itself runs, with the same
+	 * arguments.
 	 *
 	 * @return void
 	 */
@@ -109,13 +107,26 @@ abstract class WP_ServerInfo_TestCase extends WP_UnitTestCase {
 			define( 'WP_UNINSTALL_PLUGIN', 'wp-serverinfo/wp-serverinfo.php' );
 		}
 
-		if ( function_exists( 'wp_serverinfo_uninstall_site' ) ) {
-			wp_serverinfo_uninstall_site();
+		require_once dirname( __DIR__ ) . '/uninstall.php';
+
+		if ( is_multisite() ) {
+			$site_ids = get_sites(
+				array(
+					'fields' => 'ids',
+					'number' => 0,
+				)
+			);
+
+			foreach ( $site_ids as $site_id ) {
+				switch_to_blog( (int) $site_id );
+				wp_serverinfo_uninstall_site();
+				restore_current_blog();
+			}
 
 			return;
 		}
 
-		require dirname( __DIR__ ) . '/uninstall.php';
+		wp_serverinfo_uninstall_site();
 	}
 
 	/**
