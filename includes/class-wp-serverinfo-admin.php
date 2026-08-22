@@ -78,11 +78,11 @@ class WP_ServerInfo_Admin {
 	 */
 	public static function capability( $context = 'report' ) {
 		/**
-		 * Filters the capability a WP-ServerInfo surface requires.
+		 * Filters the capability required to reach a WP-ServerInfo screen.
 		 *
 		 * @since 3.0.0
 		 *
-		 * @param string $capability Capability name.
+		 * @param string $capability The required capability.
 		 * @param string $context    Which surface is asking: 'report' or 'widget'.
 		 */
 		return (string) apply_filters(

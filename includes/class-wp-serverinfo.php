@@ -26,7 +26,7 @@ class WP_ServerInfo {
 	private static $instance = null;
 
 	/**
-	 * Get the sole instance, creating it on first call.
+	 * Get the instance, creating it on first call.
 	 *
 	 * @return WP_ServerInfo
 	 */
