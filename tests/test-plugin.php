@@ -98,11 +98,11 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 
 	public function test_the_two_admin_surfaces_are_hooked() {
 		$this->assertNotFalse(
-			has_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'add_page' ) ),
+			has_action( 'admin_menu', array( 'WP_ServerInfo_Admin', 'add_page' ) ),
 			'The settings page is hooked onto admin_menu.'
 		);
 		$this->assertNotFalse(
-			has_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) ),
+			has_action( 'wp_dashboard_setup', array( 'WP_ServerInfo_Dashboard', 'register_widget' ) ),
 			'The dashboard widget is hooked onto wp_dashboard_setup.'
 		);
 	}

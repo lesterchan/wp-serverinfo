@@ -119,7 +119,7 @@ class WP_ServerInfo_Admin {
 			__( 'WP-ServerInfo', 'wp-serverinfo' ),
 			self::capability( 'report' ),
 			self::PAGE,
-			array( self::class, 'render' )
+			array( __CLASS__, 'render' )
 		);
 	}
 

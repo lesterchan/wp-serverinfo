@@ -43,7 +43,7 @@ class WP_ServerInfo {
 	 */
 	private function __construct() {
 
-		add_action( 'admin_menu', array( WP_ServerInfo_Admin::class, 'add_page' ) );
-		add_action( 'wp_dashboard_setup', array( WP_ServerInfo_Dashboard::class, 'register_widget' ) );
+		add_action( 'admin_menu', array( 'WP_ServerInfo_Admin', 'add_page' ) );
+		add_action( 'wp_dashboard_setup', array( 'WP_ServerInfo_Dashboard', 'register_widget' ) );
 	}
 }

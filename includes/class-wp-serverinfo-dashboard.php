@@ -30,7 +30,7 @@ class WP_ServerInfo_Dashboard {
 		wp_add_dashboard_widget(
 			WP_SERVERINFO_WIDGET_ID,
 			__( 'Server Information', 'wp-serverinfo' ),
-			array( self::class, 'render' )
+			array( __CLASS__, 'render' )
 		);
 	}
 
