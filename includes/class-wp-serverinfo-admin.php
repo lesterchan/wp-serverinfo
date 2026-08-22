@@ -124,6 +124,25 @@ class WP_ServerInfo_Admin {
 	}
 
 	/**
+	 * Add a Server Information link on the Plugins screen row.
+	 *
+	 * @param string[] $links Existing action links.
+	 * @return string[]
+	 */
+	public static function action_links( $links ) {
+		array_unshift(
+			$links,
+			sprintf(
+				'<a href="%s">%s</a>',
+				esc_url( self::url() ),
+				esc_html__( 'Server Information', 'wp-serverinfo' )
+			)
+		);
+
+		return $links;
+	}
+
+	/**
 	 * Build the tab list, hiding panels whose extension is not installed.
 	 *
 	 * @return array<string,string> Tab slug => label.

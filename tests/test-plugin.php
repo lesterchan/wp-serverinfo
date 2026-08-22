@@ -105,6 +105,13 @@ class WP_ServerInfo_Plugin_Test extends WP_ServerInfo_TestCase {
 			has_action( 'wp_dashboard_setup', array( 'WP_ServerInfo_Dashboard', 'register_widget' ) ),
 			'The dashboard widget is hooked onto wp_dashboard_setup.'
 		);
+		$this->assertNotFalse(
+			has_filter(
+				'plugin_action_links_' . plugin_basename( WP_SERVERINFO_MAIN_FILE ),
+				array( 'WP_ServerInfo_Admin', 'action_links' )
+			),
+			'The report action link is hooked onto this plugin basename.'
+		);
 	}
 
 	/**

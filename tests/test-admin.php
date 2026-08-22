@@ -220,6 +220,19 @@ class WP_ServerInfo_Admin_Test extends WP_ServerInfo_TestCase {
 	}
 
 	/**
+	 * The Plugins screen row links straight to the report.
+	 *
+	 * @return void
+	 */
+	public function test_action_links_prepend_the_report_link() {
+		$links = WP_ServerInfo_Admin::action_links( array( '<a href="#">Deactivate</a>' ) );
+
+		$this->assertCount( 2, $links, 'The existing links survive.' );
+		$this->assertStringContainsString( 'tools.php?page=wp-serverinfo', $links[0], 'The link points at the report screen.' );
+		$this->assertStringContainsString( 'Server Information', $links[0], 'The link is named after the screen it opens.' );
+	}
+
+	/**
 	 * @dataProvider data_tabs
 	 *
 	 * @param string $tab      Tab slug.

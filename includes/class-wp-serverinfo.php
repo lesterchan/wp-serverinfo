@@ -45,5 +45,10 @@ class WP_ServerInfo {
 
 		add_action( 'admin_menu', array( 'WP_ServerInfo_Admin', 'add_page' ) );
 		add_action( 'wp_dashboard_setup', array( 'WP_ServerInfo_Dashboard', 'register_widget' ) );
+
+		add_filter(
+			'plugin_action_links_' . plugin_basename( WP_SERVERINFO_MAIN_FILE ),
+			array( 'WP_ServerInfo_Admin', 'action_links' )
+		);
 	}
 }
