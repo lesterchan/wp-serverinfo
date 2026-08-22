@@ -18,9 +18,7 @@
  * @package WP-ServerInfo
  */
 
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
-	exit();
-}
+defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 /**
  * Remove the widget id from a user's dashboard meta.

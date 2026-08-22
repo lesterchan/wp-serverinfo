@@ -173,7 +173,7 @@ class WP_ServerInfo_Uninstall_Test extends WP_ServerInfo_TestCase {
 	public function test_uninstall_file_refuses_to_run_outside_uninstall() {
 		$source = file_get_contents( $this->uninstall_file() );
 
-		$this->assertStringContainsString( "if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {", $source, 'uninstall.php refuses to run outside the uninstall context.' );
+		$this->assertStringContainsString( "defined( 'WP_UNINSTALL_PLUGIN' ) || exit;", $source, 'uninstall.php refuses to run outside the uninstall context.' );
 	}
 
 	/**
