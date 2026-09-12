@@ -1,0 +1,91 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method WP_ServerInfo_Admin\:\:render_stats_table\(\) has parameter \$rows with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-admin.php
+
+		-
+			message: '#^Parameter \#1 \$text of function esc_html expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-wp-serverinfo-admin.php
+
+		-
+			message: '#^Parameter \#2 \$left_value of static method WP_ServerInfo_Admin\:\:render_pair_row\(\) expects string, int\|string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-wp-serverinfo-admin.php
+
+		-
+			message: '#^Method WP_ServerInfo_Cache\:\:memcached_stats\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-cache.php
+
+		-
+			message: '#^Method WP_ServerInfo_Cache\:\:redis_hit_ratio\(\) has parameter \$info with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-cache.php
+
+		-
+			message: '#^Method WP_ServerInfo_Cache\:\:redis_stats\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-cache.php
+
+		-
+			message: '#^Method WP_ServerInfo_Dashboard\:\:render_section\(\) has parameter \$items with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-dashboard.php
+
+		-
+			message: '#^Parameter \#1 \$number of function number_format_i18n expects float, float\|int\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-wp-serverinfo-format.php
+
+		-
+			message: '#^Method WP_ServerInfo_MySQL\:\:table_status\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-mysql.php
+
+		-
+			message: '#^Method WP_ServerInfo_MySQL\:\:variables\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-mysql.php
+
+		-
+			message: '#^Property WP_ServerInfo_MySQL\:\:\$table_status type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-mysql.php
+
+		-
+			message: '#^Method WP_ServerInfo_PHP\:\:ini_directives\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/class-wp-serverinfo-php.php
+
+		-
+			message: '#^Method WP_ServerInfo_PHP\:\:summary\(\) should return array\<string, string\> but returns array\<string, bool\|string\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/class-wp-serverinfo-php.php
+
+		-
+			message: '#^Offset 0 on array\{float, float, float\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: includes/class-wp-serverinfo-php.php
+
+		-
+			message: '#^Parameter \#2 \$string of function explode expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-wp-serverinfo-php.php
